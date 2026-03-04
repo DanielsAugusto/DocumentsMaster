@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, Eye, X, Search, Filter, Edit2 } from 'lucide-react';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,7 @@ export default function DocumentListFeature() {
                 <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full sm:w-1/3">Seus Documentos</h3>
 
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-2/3 justify-end items-center">
+                    <div className="flex flex-row gap-3 w-full sm:w-2/3 justify-end items-center">
                         <div className="relative w-full sm:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -78,17 +78,17 @@ export default function DocumentListFeature() {
                             />
                         </div>
 
-                        <div className="relative w-full sm:w-64">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                        <div className="relative w-12 sm:w-64 shrink-0 group">
+                            <div className="absolute inset-0 sm:inset-y-0 sm:left-0 sm:pl-3 flex items-center justify-center sm:justify-start pointer-events-none">
+                                <Filter className="h-5 w-5 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                             </div>
                             <Select
                                 value={selectedType}
                                 onChange={(e) => setSelectedType(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 cursor-pointer text-transparent sm:text-gray-900 dark:sm:text-white appearance-none sm:appearance-auto bg-transparent sm:bg-white dark:sm:bg-gray-950"
                             >
                                 {uniqueTypes.map(type => (
-                                    <option key={type} value={type}>{type}</option>
+                                    <option key={type} value={type} className="text-gray-900 dark:text-white">{type}</option>
                                 ))}
                             </Select>
                         </div>
@@ -115,11 +115,50 @@ export default function DocumentListFeature() {
                             {documents.length === 0 ? "Nenhum documento cadastrado. Adicione um novo." : "Nenhum documento encontrado na busca."}
                         </li>
                     ) : (
-                        filteredDocuments.map((doc) => (
-                            <li key={doc.id} className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col md:flex-row md:items-center justify-between transition-colors gap-6">
+                        filteredDocuments.map((doc, index) => (
+                            <li
+                                key={doc.id}
+                                className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4"
+                                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                            >
                                 <div className="flex items-start min-w-0 flex-1">
-                                    <FileIcon className="h-10 w-10 text-blue-500 dark:text-blue-400 mr-4 mt-1 flex-shrink-0" />
-                                    <div className="min-w-0 flex-1 md:grid md:grid-cols-2 md:gap-4">
+                                    {(() => {
+                                        const type = doc.type?.toUpperCase() || '';
+                                        if (type === 'PDF') {
+                                            return (
+                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mr-4 flex-shrink-0 border border-red-200 dark:border-red-800/60 shadow-sm mt-1">
+                                                    <FileText className="h-6 w-6" />
+                                                </div>
+                                            );
+                                        }
+                                        if (type.includes('WORD') || type.includes('DOC')) {
+                                            return (
+                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 mr-4 flex-shrink-0 border border-blue-200 dark:border-blue-800/60 shadow-sm mt-1">
+                                                    <FileText className="h-6 w-6" />
+                                                </div>
+                                            );
+                                        }
+                                        if (type.includes('EXCEL') || type.includes('XLS') || type.includes('PLANILHA')) {
+                                            return (
+                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mr-4 flex-shrink-0 border border-emerald-200 dark:border-emerald-800/60 shadow-sm mt-1">
+                                                    <FileSpreadsheet className="h-6 w-6" />
+                                                </div>
+                                            );
+                                        }
+                                        if (type.includes('IMAGEM') || type.includes('IMAGE') || type.includes('JPEG') || type.includes('PNG') || type.includes('JPG')) {
+                                            return (
+                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 mr-4 flex-shrink-0 border border-purple-200 dark:border-purple-800/60 shadow-sm mt-1">
+                                                    <FileImage className="h-6 w-6" />
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mr-4 flex-shrink-0 border border-gray-200 dark:border-gray-700 shadow-sm mt-1">
+                                                <FileIcon className="h-6 w-6" />
+                                            </div>
+                                        );
+                                    })()}
+                                    <div className="min-w-0 flex-1 lg:grid lg:grid-cols-2 lg:gap-4">
                                         <div className="space-y-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-2">
                                                 {doc.entity_name && (
@@ -148,7 +187,7 @@ export default function DocumentListFeature() {
                                             </div>
                                         </div>
 
-                                        <div className="hidden md:flex flex-col items-end justify-center space-y-1">
+                                        <div className="hidden lg:flex flex-col items-end justify-center space-y-1">
                                             {doc.document_date && (
                                                 <div className="text-right">
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">Data do Doc.</p>
@@ -166,49 +205,50 @@ export default function DocumentListFeature() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
+                                <div className="flex items-center gap-2 w-full xl:w-auto mt-6 xl:mt-0">
                                     <Button
                                         variant="outline"
                                         onClick={() => setPreviewDoc(doc)}
                                         title="Visualizar Documento"
-                                        className="flex-1 md:flex-none"
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
                                         size="sm"
                                     >
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        Ver
+                                        <Eye className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
+                                        <span className="hidden xl:inline">Ver</span>
                                     </Button>
                                     <Button
                                         variant="outline"
                                         asChild
                                         title="Editar Documento"
-                                        className="flex-1 md:flex-none"
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
                                         size="sm"
                                     >
                                         <Link to={`/edit/${doc.id}`}>
-                                            <Edit2 className="h-4 w-4 mr-2" />
-                                            Editar
+                                            <Edit2 className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
+                                            <span className="hidden xl:inline">Editar</span>
                                         </Link>
                                     </Button>
                                     <Button
                                         variant="outline"
                                         asChild
                                         title="Abrir no Google Drive"
-                                        className="flex-1 md:flex-none"
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
                                         size="sm"
                                     >
                                         <a href={doc.drive_url} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="h-4 w-4 mr-2" />
-                                            Google Drive
+                                            <ExternalLink className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
+                                            <span className="hidden xl:inline">Drive</span>
                                         </a>
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         onClick={() => handleDelete(doc.id)}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+                                        className="flex-1 xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 xl:px-3"
                                         title="Excluir"
-                                        size="icon"
+                                        size="sm"
                                     >
-                                        <Trash2 className="h-5 w-5" />
+                                        <Trash2 className="h-5 w-5 xl:mr-2" />
+                                        <span className="hidden xl:inline">Excluir</span>
                                     </Button>
                                 </div>
                             </li>

@@ -1,15 +1,21 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { FileText, Plus, LogOut, Layout } from 'lucide-react';
+import { FileText, Plus, LogOut, Layout, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 export const navItems = [
     { name: 'Documentos', path: '/', icon: FileText },
     { name: 'Novo Documento', path: '/new', icon: Plus },
+    { name: 'Configurações', path: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+    isOpen?: boolean;
+    setIsOpen?: (open: boolean) => void;
+}
+
+export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -19,9 +25,12 @@ export function Sidebar() {
     };
 
     return (
-        <aside className="w-72 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen sticky top-0 transition-colors">
-            <div className="h-20 flex items-center px-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
-                <Layout className="h-8 w-8 text-blue-600 dark:text-blue-500 mr-3" />
+        <aside className={cn(
+            "min-w-[288px] w-max shrink-0 pr-4 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+            isOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+            <div className="h-[80px] shrink-0 flex items-center px-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
+                <Layout className="h-8 w-8 text-primary dark:text-primary mr-3" />
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">DocControl</span>
             </div>
 
@@ -33,20 +42,21 @@ export function Sidebar() {
                         <Link
                             key={item.name}
                             to={item.path}
+                            onClick={() => setIsOpen?.(false)}
                             className={cn(
                                 "flex items-center px-4 py-4 text-lg font-medium rounded-lg transition-colors group",
                                 isActive
-                                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                                    ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
                                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                             )}
                         >
                             <Icon
                                 className={cn(
-                                    "mr-4 h-6 w-6 transition-colors",
-                                    isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
+                                    "mr-4 h-6 w-6 shrink-0 transition-colors",
+                                    isActive ? "text-primary dark:text-primary" : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
                                 )}
                             />
-                            {item.name}
+                            <span className="min-w-0 break-words">{item.name}</span>
                         </Link>
                     );
                 })}

@@ -6,8 +6,10 @@ import DashboardLayout from './pages/DashboardLayout';
 import DocumentList from './pages/DocumentList';
 import NewDocument from './pages/NewDocument';
 import EditDocument from './pages/EditDocument';
+import SettingsFeature from './features/settings/SettingsFeature';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SettingsProvider } from '@/contexts/SettingsContext';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -26,21 +28,24 @@ function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-                <BrowserRouter>
-                    <Routes>
-                        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-                        <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
+            <SettingsProvider>
+                <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+                    <BrowserRouter>
+                        <Routes>
+                            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+                            <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
 
-                        {/* Rotas Protegidas */}
-                        <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
-                            <Route index element={<DocumentList />} />
-                            <Route path="new" element={<NewDocument />} />
-                            <Route path="edit/:id" element={<EditDocument />} />
-                        </Route>
-                    </Routes>
-                </BrowserRouter>
-            </ThemeProvider>
+                            {/* Rotas Protegidas */}
+                            <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
+                                <Route index element={<DocumentList />} />
+                                <Route path="new" element={<NewDocument />} />
+                                <Route path="edit/:id" element={<EditDocument />} />
+                                <Route path="settings" element={<SettingsFeature />} />
+                            </Route>
+                        </Routes>
+                    </BrowserRouter>
+                </ThemeProvider>
+            </SettingsProvider>
         </QueryClientProvider>
     );
 }

@@ -182,7 +182,6 @@ export default function NewDocumentFeature() {
                         <option value="Word (DOCX)">Word (DOCX)</option>
                         <option value="Excel (XLSX)">Excel (XLSX)</option>
                         <option value="Imagem">Imagem</option>
-                        <option value="Pasta do Drive">Pasta do Drive</option>
                         <option value="Outro">Outro</option>
                     </Select>
                 </div>
@@ -200,11 +199,12 @@ export default function NewDocumentFeature() {
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 font-medium">Lembre-se de configurar o link do Google Drive para acesso público/leitura.</p>
                 </div>
 
-                <div className="flex justify-end pt-6 gap-4">
+                <div className="flex flex-col-reverse md:flex-row justify-end pt-6 gap-4">
                     <Button
                         type="button"
                         variant="outline"
                         size="lg"
+                        className="w-full md:w-auto transition-transform active:scale-95"
                         onClick={() => navigate('/')}
                     >
                         Cancelar
@@ -212,6 +212,7 @@ export default function NewDocumentFeature() {
                     <Button
                         type="submit"
                         size="lg"
+                        className="w-full md:w-auto transition-transform active:scale-95"
                         disabled={loading}
                     >
                         {loading ? 'Salvando...' : 'Salvar Arquivo'}
