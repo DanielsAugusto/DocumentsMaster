@@ -1,0 +1,92 @@
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+export default function RegisterFeature() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+
+        if (error) {
+            setError(error.message);
+        } else {
+            navigate('/');
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+            <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 transition-colors">
+                <div className="text-center">
+                    <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Criar nova conta</h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Junte-se ao sistema de controle</p>
+                </div>
+
+                <form className="mt-8 space-y-6" onSubmit={handleRegister}>
+                    {error && (
+                        <div className="text-red-500 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-md border border-red-100 dark:border-red-900/50">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email-address">Email</Label>
+                            <Input
+                                id="email-address"
+                                name="email"
+                                type="email"
+                                required
+                                placeholder="nome@exemplo.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Senha</Label>
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                placeholder="Sua senha"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <Button type="submit" className="w-full text-base" size="lg" disabled={loading}>
+                        {loading ? 'Criando conta...' : 'Cadastrar'}
+                    </Button>
+                </form>
+
+                <div className="text-center text-sm mt-6">
+                    <span className="text-gray-500 dark:text-gray-400">Já tem uma conta? </span>
+                    <Link
+                        to="/login"
+                        className="font-medium text-blue-600 dark:text-blue-500 hover:text-blue-500 dark:hover:text-blue-400 underline underline-offset-4"
+                    >
+                        Entre
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
