@@ -5,8 +5,6 @@ import Register from './pages/Register';
 import DashboardLayout from './pages/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import DocumentList from './pages/DocumentList';
-import NewDocument from './pages/NewDocument';
-import EditDocument from './pages/EditDocument';
 import SettingsFeature from './features/settings/SettingsFeature';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -40,8 +38,6 @@ function App() {
                             <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
                                 <Route index element={<Dashboard />} />
                                 <Route path="documentos" element={<DocumentList />} />
-                                <Route path="new" element={<NewDocument />} />
-                                <Route path="edit/:id" element={<EditDocument />} />
                                 <Route path="settings" element={<SettingsFeature />} />
                             </Route>
                         </Routes>

@@ -1,21 +1,70 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2 } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, FolderPlus, FolderOutput, ArrowLeft } from 'lucide-react';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useDocuments } from './hooks/useDocuments';
+import { useFolders, useAllFolders } from './hooks/useFolders';
 import { useQueryClient } from '@tanstack/react-query';
 import { Document } from './api/getDocuments';
+import { Folder as FolderType } from './api/folders';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { CreateFolderModal } from './components/CreateFolderModal';
+import { DeleteFolderModal } from './components/DeleteFolderModal';
+import { MoveDocumentModal } from './components/MoveDocumentModal';
+import { DocumentModal } from './components/DocumentModal';
+import { RenameFolderModal } from './components/RenameFolderModal';
 
 export default function DocumentListFeature() {
-    const { data: documents = [], isLoading: loading } = useDocuments();
+    const location = useLocation();
+    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [folderPath, setFolderPath] = useState<FolderType[]>([]);
+
+    const { data: allFoldersData = [] } = useAllFolders();
+    const { data: folders = [], isLoading: loadingFolders } = useFolders(currentFolderId);
+    const { data: documents = [], isLoading: loading } = useDocuments(currentFolderId);
     const queryClient = useQueryClient();
 
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
     const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+
+    // Modal states for folders
+    const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+    const [isRenameFolderOpen, setIsRenameFolderOpen] = useState(false);
+    const [folderToRename, setFolderToRename] = useState<FolderType | null>(null);
+    const [folderToDelete, setFolderToDelete] = useState<FolderType | null>(null);
+    const [documentToMove, setDocumentToMove] = useState<Document | null>(null);
+
+    // Modal state for Documents
+    const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+    const [documentToEditId, setDocumentToEditId] = useState<string | null>(null);
+
+    // Effect for opening specific folders based on location state (e.g. going from Dashboard)
+    useEffect(() => {
+        if (location.state?.folderId && allFoldersData.length > 0) {
+            const targetFolderId = location.state.folderId;
+            setCurrentFolderId(targetFolderId);
+
+            const buildPath = (id: string, currentPath: FolderType[] = []): FolderType[] => {
+                const folder = allFoldersData.find(f => f.id === id);
+                if (folder) {
+                    const newPath = [folder, ...currentPath];
+                    if (folder.parent_id) {
+                        return buildPath(folder.parent_id, newPath);
+                    }
+                    return newPath;
+                }
+                return currentPath;
+            };
+
+            setFolderPath(buildPath(targetFolderId));
+
+            // Clear location state to prevent running this again on subsequent renders
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state?.folderId, allFoldersData]);
 
     // Filtros
     const [searchParams, setSearchParams] = useSearchParams();
@@ -71,6 +120,71 @@ export default function DocumentListFeature() {
 
     return (
         <>
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 font-medium overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full">
+                    {currentFolderId && (
+                        <button
+                            onClick={() => {
+                                if (folderPath.length > 1) {
+                                    setCurrentFolderId(folderPath[folderPath.length - 2].id);
+                                    setFolderPath(path => path.slice(0, -1));
+                                } else {
+                                    setCurrentFolderId(null);
+                                    setFolderPath([]);
+                                }
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shrink-0 mr-3 px-2.5 py-1.5 rounded-md shadow-sm text-xs font-semibold"
+                            title="Voltar ao nível anterior"
+                        >
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            Voltar
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            setCurrentFolderId(null);
+                            setFolderPath([]);
+                        }}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1 shrink-0"
+                    >
+                        <Folder className="h-4 w-4" />
+                        Acesso Rápido
+                    </button>
+                    {folderPath.map((folder, index) => (
+                        <div key={folder.id} className="flex items-center shrink-0">
+                            <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
+                            <button
+                                onClick={() => {
+                                    setCurrentFolderId(folder.id);
+                                    setFolderPath(path => path.slice(0, index + 1));
+                                }}
+                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate max-w-[150px]"
+                                title={folder.name}
+                            >
+                                {folder.name}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex shrink-0 gap-2">
+                    <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="shrink-0 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                        <FolderPlus className="h-4 w-4 mr-2" />
+                        Nova Pasta
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setDocumentToEditId(null);
+                            setIsDocumentModalOpen(true);
+                        }}
+                        className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        <FileIcon className="h-4 w-4 mr-2" />
+                        Novo Arquivo
+                    </Button>
+                </div>
+            </div>
+
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
                 <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full sm:w-1/3">Seus Documentos</h3>
@@ -133,21 +247,71 @@ export default function DocumentListFeature() {
                 </div>
 
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {loading ? (
-                        // Skeleton Loader State
-                        Array.from({ length: 3 }).map((_, idx) => (
-                            <li key={idx} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
-                                <div className="flex items-start flex-1 min-w-0">
-                                    <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded mr-4 mt-1 flex-shrink-0"></div>
-                                    <div className="flex-1 space-y-3">
-                                        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4"></div>
-                                        <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
-                                        <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
-                                    </div>
+                    {/* Skeleton Loading State */}
+                    {(loading || loadingFolders) && Array.from({ length: 3 }).map((_, idx) => (
+                        <li key={idx} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
+                            <div className="flex items-start flex-1 min-w-0">
+                                <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded mr-4 mt-1 flex-shrink-0"></div>
+                                <div className="flex-1 space-y-3">
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4"></div>
+                                    <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
                                 </div>
-                            </li>
-                        ))
-                    ) : filteredDocuments.length === 0 ? (
+                            </div>
+                        </li>
+                    ))}
+
+                    {/* Rendering Folders */}
+                    {!loading && !loadingFolders && folders.length > 0 && folders.map((folder, index) => (
+                        <li
+                            key={folder.id}
+                            style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
+                            className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 animate-in fade-in slide-in-from-bottom-4 group cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                            onClick={() => {
+                                setCurrentFolderId(folder.id);
+                                setFolderPath(path => [...path, folder]);
+                            }}
+                        >
+                            <div className="flex items-center min-w-0">
+                                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
+                                    <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
+                                </div>
+                                <div>
+                                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                                        {folder.name}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setFolderToRename(folder);
+                                        setIsRenameFolderOpen(true);
+                                    }}
+                                    className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                    size="sm"
+                                    title="Renomear Pasta"
+                                >
+                                    <Edit2 className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Renomear</span>
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setFolderToDelete(folder)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3"
+                                    size="sm"
+                                    title="Excluir Pasta"
+                                >
+                                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Excluir</span>
+                                </Button>
+                            </div>
+                        </li>
+                    ))}
+
+                    {/* Rendering Documents */}
+                    {!loading && !loadingFolders && filteredDocuments.length === 0 && folders.length === 0 ? (
                         <li className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                             {documents.length === 0 ? "Nenhum documento cadastrado. Adicione um novo." : "Nenhum documento encontrado na busca."}
                         </li>
@@ -243,40 +407,52 @@ export default function DocumentListFeature() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 w-full xl:w-auto mt-6 xl:mt-0" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1 sm:gap-2 w-full xl:w-auto mt-4 xl:mt-0 xl:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
-                                        asChild
+                                        onClick={() => {
+                                            setDocumentToEditId(doc.id);
+                                            setIsDocumentModalOpen(true);
+                                        }}
                                         title="Editar Documento"
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                     >
-                                        <Link to={`/edit/${doc.id}`}>
-                                            <Edit2 className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
-                                            <span className="hidden xl:inline">Editar</span>
-                                        </Link>
+                                        <Edit2 className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Editar</span>
                                     </Button>
                                     <Button
                                         variant="outline"
                                         asChild
                                         title="Abrir no Google Drive"
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                     >
                                         <a href={doc.drive_url} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
-                                            <span className="hidden xl:inline">Drive</span>
+                                            <ExternalLink className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Drive</span>
                                         </a>
                                     </Button>
                                     <Button
+                                        variant="outline"
+                                        onClick={() => setDocumentToMove(doc)}
+                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        title="Mover de pasta"
+                                        size="sm"
+                                    >
+                                        <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Mover</span>
+                                    </Button>
+
+                                    <Button
                                         variant="ghost"
                                         onClick={() => setDocumentToDelete(doc.id)}
-                                        className="flex-1 xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 xl:px-3"
+                                        className="flex-1 xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
                                         title="Excluir"
                                         size="sm"
                                     >
-                                        <Trash2 className="h-5 w-5 xl:mr-2" />
-                                        <span className="hidden xl:inline">Excluir</span>
+                                        <Trash2 className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Excluir</span>
                                     </Button>
                                 </div>
                             </li>
@@ -336,6 +512,48 @@ export default function DocumentListFeature() {
                 }}
                 onCancel={() => setDocumentToDelete(null)}
                 isDestructive
+            />
+
+            {/* Folder Modals */}
+            <CreateFolderModal
+                isOpen={isCreateFolderOpen}
+                onClose={() => setIsCreateFolderOpen(false)}
+                parentId={currentFolderId}
+            />
+
+            <DeleteFolderModal
+                isOpen={!!folderToDelete}
+                onClose={() => setFolderToDelete(null)}
+                folderId={folderToDelete?.id || null}
+                folderName={folderToDelete?.name || ''}
+            />
+
+            <RenameFolderModal
+                isOpen={isRenameFolderOpen}
+                onClose={() => {
+                    setIsRenameFolderOpen(false);
+                    setFolderToRename(null);
+                }}
+                folder={folderToRename}
+            />
+
+            <MoveDocumentModal
+                isOpen={!!documentToMove}
+                onClose={() => setDocumentToMove(null)}
+                documentId={documentToMove?.id || null}
+                documentTitle={documentToMove?.title || ''}
+                currentFolderId={documentToMove?.folder_id || null}
+            />
+
+            {/* Document Creation / Edit Modal */}
+            <DocumentModal
+                isOpen={isDocumentModalOpen}
+                onClose={() => {
+                    setIsDocumentModalOpen(false);
+                    setDocumentToEditId(null);
+                }}
+                documentId={documentToEditId}
+                initialFolderId={currentFolderId}
             />
         </>
     );

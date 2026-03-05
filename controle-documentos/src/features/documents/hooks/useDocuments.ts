@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { getDocuments, Document } from '../api/getDocuments';
 
-export const useDocuments = () => {
+export const useDocuments = (folderId: string | null | 'all' = null) => {
     return useQuery<Document[], Error>({
-        queryKey: ['documents'],
-        queryFn: getDocuments,
+        queryKey: ['documents', folderId],
+        queryFn: () => getDocuments(folderId),
     });
 };

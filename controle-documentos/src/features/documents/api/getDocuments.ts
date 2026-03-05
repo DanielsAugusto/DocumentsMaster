@@ -12,13 +12,24 @@ export type Document = {
     type: string;
     drive_url: string;
     created_at: string;
+    folder_id?: string | null;
 };
 
-export const getDocuments = async (): Promise<Document[]> => {
-    const { data, error } = await supabase
+export const getDocuments = async (folderId: string | null | 'all' = null): Promise<Document[]> => {
+    let query = supabase
         .from('documents')
         .select('*')
         .order('created_at', { ascending: false });
+
+    if (folderId !== 'all') {
+        if (folderId) {
+            query = query.eq('folder_id', folderId);
+        } else {
+            query = query.is('folder_id', null);
+        }
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         throw new Error(error.message);

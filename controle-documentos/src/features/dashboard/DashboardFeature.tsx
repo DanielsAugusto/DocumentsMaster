@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
-import { FileText, FileSpreadsheet, FileImage, File as FileIcon, Search, Eye, ArrowRight, Activity, Clock } from 'lucide-react';
+import { useAllFolders } from '@/features/documents/hooks/useFolders';
+import { FileText, FileSpreadsheet, FileImage, File as FileIcon, Search, Eye, ArrowRight, Activity, Clock, Folder } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export default function DashboardFeature() {
-    const { data: documents = [], isLoading } = useDocuments();
+    const { data: documents = [], isLoading } = useDocuments('all');
+    const { data: folders = [] } = useAllFolders();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -117,7 +119,7 @@ export default function DashboardFeature() {
                                                 onClick={() => {
                                                     setSearchQuery(doc.title);
                                                     setShowSuggestions(false);
-                                                    navigate(`/documentos?q=${encodeURIComponent(doc.title)}`);
+                                                    navigate(`/documentos?q=${encodeURIComponent(doc.title)}`, { state: { folderId: doc.folder_id } });
                                                 }}
                                                 className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors"
                                             >
@@ -245,17 +247,25 @@ export default function DashboardFeature() {
                                     recentDocuments.map((doc) => (
                                         <tr
                                             key={doc.id}
-                                            onClick={() => navigate(`/documentos?q=${encodeURIComponent(doc.title)}`)}
+                                            onClick={() => navigate(`/documentos?q=${encodeURIComponent(doc.title)}`, { state: { folderId: doc.folder_id } })}
                                             className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group"
                                         >
-                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-lg bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-gray-800 flex items-center justify-center shrink-0">
-                                                    {getFileIcon(doc.type)}
+                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex flex-col md:flex-row md:items-center gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-lg bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-gray-800 flex items-center justify-center shrink-0">
+                                                        {getFileIcon(doc.type)}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="truncate block font-semibold">{doc.title}</p>
+                                                        {doc.entity_name && <p className="text-xs text-gray-500 truncate mt-0.5">{doc.entity_name}</p>}
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="truncate block font-semibold">{doc.title}</p>
-                                                    {doc.entity_name && <p className="text-xs text-gray-500 truncate mt-0.5">{doc.entity_name}</p>}
-                                                </div>
+                                                {doc.folder_id && folders.find(f => f.id === doc.folder_id) && (
+                                                    <div className="flex items-center gap-1.5 mt-2 md:mt-0 md:ml-auto md:w-48 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs truncate shrink-0 max-w-full">
+                                                        <Folder className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                                        <span className="truncate">{folders.find(f => f.id === doc.folder_id)?.name}</span>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
