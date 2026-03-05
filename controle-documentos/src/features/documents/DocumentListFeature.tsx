@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, FolderPlus, FolderOutput, ArrowLeft } from 'lucide-react';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft } from 'lucide-react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ export default function DocumentListFeature() {
     const { data: allFoldersData = [] } = useAllFolders();
     const { data: folders = [], isLoading: loadingFolders } = useFolders(currentFolderId);
     const { data: documents = [], isLoading: loading } = useDocuments(currentFolderId);
+    const { data: allDocuments = [] } = useDocuments('all');
     const queryClient = useQueryClient();
 
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
@@ -66,12 +67,61 @@ export default function DocumentListFeature() {
         }
     }, [location.state?.folderId, allFoldersData]);
 
+    useEffect(() => {
+        if (location.state?.openNewDocument) {
+            setDocumentToEditId(null);
+            setIsDocumentModalOpen(true);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state?.openNewDocument]);
+
     // Filtros
     const [searchParams, setSearchParams] = useSearchParams();
     const initialQuery = searchParams.get('q') || '';
     const [searchTerm, setSearchTerm] = useState(initialQuery);
     const [selectedType, setSelectedType] = useState('Todos');
-    const [selectedEntity, setSelectedEntity] = useState('Todos');
+    const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+    const [isKeywordFilterOpen, setIsKeywordFilterOpen] = useState(false);
+    const keywordFilterRef = useRef<HTMLDivElement | null>(null);
+    const documentCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
+    const [pendingDocumentFocusId, setPendingDocumentFocusId] = useState<string | null>(null);
+    const [focusedDocumentId, setFocusedDocumentId] = useState<string | null>(null);
+
+    const parseKeywordTags = (keywords?: string | null) => {
+        if (!keywords) return [];
+        return keywords
+            .split(/[;,]/)
+            .map((tag) => tag.trim())
+            .filter(Boolean);
+    };
+
+    const hasActiveTextSearch = searchTerm.trim().length > 0;
+    const hasActiveKeywordFilters = selectedKeywords.length > 0;
+    const isGlobalDocumentSearch = hasActiveTextSearch || hasActiveKeywordFilters;
+
+    const buildFolderPath = (id: string, currentPath: FolderType[] = []): FolderType[] => {
+        const folder = allFoldersData.find((f) => f.id === id);
+        if (folder) {
+            const newPath = [folder, ...currentPath];
+            if (folder.parent_id) {
+                return buildFolderPath(folder.parent_id, newPath);
+            }
+            return newPath;
+        }
+        return currentPath;
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (!keywordFilterRef.current) return;
+            if (!keywordFilterRef.current.contains(event.target as Node)) {
+                setIsKeywordFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleDelete = async (id: string) => {
         // Optimistic UI updates could go here, but for simplicity we invalidate
@@ -87,8 +137,13 @@ export default function DocumentListFeature() {
         return url;
     };
 
+    const documentsSource = useMemo(
+        () => (isGlobalDocumentSearch ? allDocuments : documents),
+        [isGlobalDocumentSearch, allDocuments, documents]
+    );
+
     const filteredDocuments = useMemo(() => {
-        return documents.filter((doc) => {
+        return documentsSource.filter((doc) => {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch =
                 doc.title.toLowerCase().includes(searchLower) ||
@@ -98,22 +153,50 @@ export default function DocumentListFeature() {
                 (doc.sender && doc.sender.toLowerCase().includes(searchLower)) ||
                 (doc.recipient && doc.recipient.toLowerCase().includes(searchLower));
 
-            const matchesType = selectedType === 'Todos' || doc.type === selectedType;
-            const matchesEntity = selectedEntity === 'Todos' || doc.entity_name === selectedEntity;
+            const matchesType =
+                selectedType === 'Todos' ||
+                (selectedType !== 'Pastas' && doc.type === selectedType);
+            const docKeywordTags = parseKeywordTags(doc.keywords);
+            const matchesKeyword =
+                selectedKeywords.length === 0 ||
+                selectedKeywords.some((selectedTag) => docKeywordTags.includes(selectedTag));
 
-            return matchesSearch && matchesType && matchesEntity;
+            return matchesSearch && matchesType && matchesKeyword;
         });
-    }, [documents, searchTerm, selectedType, selectedEntity]);
+    }, [documentsSource, searchTerm, selectedType, selectedKeywords]);
 
     const uniqueTypes = useMemo(() => {
         const types = new Set(documents.map(d => d.type).filter(Boolean));
-        return ['Todos', ...Array.from(types)];
+        return ['Todos', 'Pastas', ...Array.from(types)];
     }, [documents]);
 
-    const uniqueEntities = useMemo(() => {
-        const entities = new Set(documents.map(d => d.entity_name).filter(Boolean));
-        return ['Todos', ...Array.from(entities)] as string[];
-    }, [documents]);
+    const uniqueKeywordTags = useMemo(() => {
+        const tags = new Set(
+            allDocuments.flatMap((doc) => parseKeywordTags(doc.keywords))
+        );
+        return Array.from(tags) as string[];
+    }, [allDocuments]);
+
+    const visibleFolders =
+        !isGlobalDocumentSearch && (selectedType === 'Todos' || selectedType === 'Pastas')
+            ? folders
+            : [];
+
+    useEffect(() => {
+        if (!pendingDocumentFocusId) return;
+        const targetElement = documentCardRefs.current[pendingDocumentFocusId];
+        if (!targetElement) return;
+
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setFocusedDocumentId(pendingDocumentFocusId);
+        setPendingDocumentFocusId(null);
+
+        const timeout = window.setTimeout(() => {
+            setFocusedDocumentId(null);
+        }, 1800);
+
+        return () => window.clearTimeout(timeout);
+    }, [pendingDocumentFocusId, filteredDocuments]);
 
     // No longer blocking the whole render with a simple text loading.
     // We will render the UI shell and show Skeletons inside the list instead.
@@ -157,6 +240,7 @@ export default function DocumentListFeature() {
                                 onClick={() => {
                                     setCurrentFolderId(folder.id);
                                     setFolderPath(path => path.slice(0, index + 1));
+                                    setSelectedType('Todos');
                                 }}
                                 className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate max-w-[150px]"
                                 title={folder.name}
@@ -194,17 +278,58 @@ export default function DocumentListFeature() {
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                             </div>
-                            <Select
-                                value={selectedEntity}
-                                onChange={(e) => setSelectedEntity(e.target.value)}
-                                className="pl-9 cursor-pointer text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
-                                title="Filtrar por Título Identificador"
-                            >
-                                <option value="Todos">Todos</option>
-                                {uniqueEntities.filter(e => e !== 'Todos').map(entity => (
-                                    <option key={entity} value={entity} className="text-gray-900 dark:text-white">{entity}</option>
-                                ))}
-                            </Select>
+                            <div ref={keywordFilterRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsKeywordFilterOpen((prev) => !prev)}
+                                    className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-9 text-sm text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:hover:bg-slate-900"
+                                    title="Filtrar por Palavras-chave"
+                                >
+                                    <span className="truncate text-left">
+                                        {selectedKeywords.length === 0
+                                            ? 'Todos'
+                                            : `${selectedKeywords.length} selecionada(s)`}
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 ml-2 shrink-0 text-gray-500 dark:text-gray-400" />
+                                </button>
+
+                                {isKeywordFilterOpen && (
+                                    <div className="absolute z-30 mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-slate-900">
+                                        <div className="max-h-56 overflow-y-auto p-2 space-y-1">
+                                            <label className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedKeywords.length === 0}
+                                                    onChange={() => setSelectedKeywords([])}
+                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                Todos
+                                            </label>
+
+                                            {uniqueKeywordTags.map((tag) => (
+                                                <label
+                                                    key={tag}
+                                                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedKeywords.includes(tag)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedKeywords((prev) => [...prev, tag]);
+                                                            } else {
+                                                                setSelectedKeywords((prev) => prev.filter((item) => item !== tag));
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <span className="truncate">{tag}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="relative w-full md:w-80">
@@ -262,7 +387,7 @@ export default function DocumentListFeature() {
                     ))}
 
                     {/* Rendering Folders */}
-                    {!loading && !loadingFolders && folders.length > 0 && folders.map((folder, index) => (
+                    {!loading && !loadingFolders && visibleFolders.length > 0 && visibleFolders.map((folder, index) => (
                         <li
                             key={folder.id}
                             style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
@@ -270,6 +395,7 @@ export default function DocumentListFeature() {
                             onClick={() => {
                                 setCurrentFolderId(folder.id);
                                 setFolderPath(path => [...path, folder]);
+                                setSelectedType('Todos');
                             }}
                         >
                             <div className="flex items-center min-w-0">
@@ -311,7 +437,7 @@ export default function DocumentListFeature() {
                     ))}
 
                     {/* Rendering Documents */}
-                    {!loading && !loadingFolders && filteredDocuments.length === 0 && folders.length === 0 ? (
+                    {!loading && !loadingFolders && filteredDocuments.length === 0 && visibleFolders.length === 0 ? (
                         <li className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                             {documents.length === 0 ? "Nenhum documento cadastrado. Adicione um novo." : "Nenhum documento encontrado na busca."}
                         </li>
@@ -319,7 +445,10 @@ export default function DocumentListFeature() {
                         filteredDocuments.map((doc, index) => (
                             <li
                                 key={doc.id}
-                                className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer"
+                                ref={(element) => {
+                                    documentCardRefs.current[doc.id] = element;
+                                }}
+                                className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 onClick={() => setPreviewDoc(doc)}
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                             >
@@ -363,9 +492,9 @@ export default function DocumentListFeature() {
                                     <div className="min-w-0 flex-1 lg:grid lg:grid-cols-2 lg:gap-4">
                                         <div className="space-y-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                {doc.entity_name && (
+                                                {doc.keywords && (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                                                        {doc.entity_name}
+                                                        {doc.keywords}
                                                     </span>
                                                 )}
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
@@ -383,22 +512,51 @@ export default function DocumentListFeature() {
                                                 </p>
                                             )}
 
+                                            {doc.entity_name && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
+                                                    Entidade principal: <span className="font-medium text-gray-900 dark:text-gray-200">{doc.entity_name}</span>
+                                                </p>
+                                            )}
+
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 pt-1">
                                                 {doc.sender && <p>De: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.sender}</span></p>}
                                                 {doc.recipient && <p>Para: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.recipient}</span></p>}
                                             </div>
                                         </div>
 
-                                        <div className="hidden lg:flex flex-col items-end justify-center space-y-1">
-                                            {doc.document_date && (
-                                                <div className="text-right">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Data do Doc.</p>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
-                                                        {new Date(doc.document_date + 'T12:00:00Z').toLocaleDateString()}
-                                                    </p>
-                                                </div>
+                                        <div
+                                            className={`hidden lg:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id)
+                                                ? 'justify-between'
+                                                : 'justify-end'
+                                                }`}
+                                        >
+                                            {(isGlobalDocumentSearch || !currentFolderId) && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!doc.folder_id) return;
+                                                        setCurrentFolderId(doc.folder_id);
+                                                        setFolderPath(buildFolderPath(doc.folder_id));
+                                                        setSelectedType('Todos');
+                                                        setPendingDocumentFocusId(doc.id);
+                                                    }}
+                                                    className="flex items-center gap-2.5 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-3.5 py-2 rounded-md text-base max-w-[260px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                                    title="Abrir pasta e localizar arquivo"
+                                                >
+                                                    <Folder className="h-[18px] w-[18px] shrink-0 text-amber-500" />
+                                                    <span className="truncate">{allFoldersData.find((folder) => folder.id === doc.folder_id)?.name}</span>
+                                                </button>
                                             )}
-                                            <div className="text-right">
+                                            <div className="text-right space-y-0.5">
+                                                {doc.document_date && (
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Data do Doc.</p>
+                                                        <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
+                                                            {new Date(doc.document_date + 'T12:00:00Z').toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 <p className="text-xs text-gray-400 dark:text-gray-500">
                                                     Salvo em <time>{new Date(doc.created_at).toLocaleDateString()}</time>
                                                 </p>

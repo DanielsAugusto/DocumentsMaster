@@ -15,8 +15,21 @@ export default function DashboardFeature() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchQuery.trim()) {
-            navigate(`/documentos?q=${encodeURIComponent(searchQuery.trim())}`);
+        const query = searchQuery.trim();
+        if (query) {
+            const searchLower = query.toLowerCase();
+            const firstMatch = documents.find((doc) =>
+                doc.title.toLowerCase().includes(searchLower) ||
+                (doc.entity_name && doc.entity_name.toLowerCase().includes(searchLower)) ||
+                (doc.subject && doc.subject.toLowerCase().includes(searchLower)) ||
+                (doc.keywords && doc.keywords.toLowerCase().includes(searchLower)) ||
+                (doc.sender && doc.sender.toLowerCase().includes(searchLower)) ||
+                (doc.recipient && doc.recipient.toLowerCase().includes(searchLower))
+            );
+
+            navigate(`/documentos?q=${encodeURIComponent(query)}`, {
+                state: { folderId: firstMatch?.folder_id || null }
+            });
         } else {
             navigate('/documentos');
         }
@@ -292,7 +305,11 @@ export default function DashboardFeature() {
                     <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm">
                         Adicione um novo documento ao sistema para mantê-lo organizado e fácil de buscar.
                     </p>
-                    <Button size="lg" onClick={() => navigate('/new')} className="w-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95 space-x-2">
+                    <Button
+                        size="lg"
+                        onClick={() => navigate('/documentos', { state: { openNewDocument: true } })}
+                        className="w-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95 space-x-2"
+                    >
                         <span>Adicione um novo documento</span>
                         <ArrowRight className="h-5 w-5" />
                     </Button>
