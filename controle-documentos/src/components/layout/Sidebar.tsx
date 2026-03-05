@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { FileText, Plus, LogOut, Layout, Settings } from 'lucide-react';
+import { Home, FileText, Plus, LogOut, Layout, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 export const navItems = [
-    { name: 'Documentos', path: '/', icon: FileText },
+    { name: 'Início', path: '/', icon: Home },
+    { name: 'Documentos', path: '/documentos', icon: FileText },
     { name: 'Novo Documento', path: '/new', icon: Plus },
     { name: 'Configurações', path: '/settings', icon: Settings },
 ];
@@ -18,6 +20,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
+    const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -66,12 +69,23 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 <Button
                     variant="ghost"
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 text-lg py-6"
-                    onClick={handleLogout}
+                    onClick={() => setIsLogoutOpen(true)}
                 >
                     <LogOut className="mr-4 h-6 w-6" />
                     Sair
                 </Button>
             </div>
+
+            <ConfirmModal
+                isOpen={isLogoutOpen}
+                title="Sair do sistema"
+                description="Tem certeza que deseja encerrar a sua sessão e sair do aplicativo?"
+                confirmText="Sair"
+                cancelText="Cancelar"
+                onConfirm={handleLogout}
+                onCancel={() => setIsLogoutOpen(false)}
+                isDestructive
+            />
         </aside>
     );
 }

@@ -1,30 +1,34 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useDocuments } from './hooks/useDocuments';
 import { useQueryClient } from '@tanstack/react-query';
 import { Document } from './api/getDocuments';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 export default function DocumentListFeature() {
     const { data: documents = [], isLoading: loading } = useDocuments();
     const queryClient = useQueryClient();
 
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+    const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
     // Filtros
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialQuery = searchParams.get('q') || '';
+    const [searchTerm, setSearchTerm] = useState(initialQuery);
     const [selectedType, setSelectedType] = useState('Todos');
+    const [selectedEntity, setSelectedEntity] = useState('Todos');
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir este documento?')) return;
-
         // Optimistic UI updates could go here, but for simplicity we invalidate
         await supabase.from('documents').delete().eq('id', id);
         queryClient.invalidateQueries({ queryKey: ['documents'] });
+        setDocumentToDelete(null);
     };
 
     const getEmbedUrl = (url: string) => {
@@ -46,13 +50,20 @@ export default function DocumentListFeature() {
                 (doc.recipient && doc.recipient.toLowerCase().includes(searchLower));
 
             const matchesType = selectedType === 'Todos' || doc.type === selectedType;
-            return matchesSearch && matchesType;
+            const matchesEntity = selectedEntity === 'Todos' || doc.entity_name === selectedEntity;
+
+            return matchesSearch && matchesType && matchesEntity;
         });
-    }, [documents, searchTerm, selectedType]);
+    }, [documents, searchTerm, selectedType, selectedEntity]);
 
     const uniqueTypes = useMemo(() => {
-        const types = new Set(documents.map(d => d.type));
+        const types = new Set(documents.map(d => d.type).filter(Boolean));
         return ['Todos', ...Array.from(types)];
+    }, [documents]);
+
+    const uniqueEntities = useMemo(() => {
+        const entities = new Set(documents.map(d => d.entity_name).filter(Boolean));
+        return ['Todos', ...Array.from(entities)] as string[];
     }, [documents]);
 
     // No longer blocking the whole render with a simple text loading.
@@ -64,8 +75,25 @@ export default function DocumentListFeature() {
                 <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full sm:w-1/3">Seus Documentos</h3>
 
-                    <div className="flex flex-row gap-3 w-full sm:w-2/3 justify-end items-center">
-                        <div className="relative w-full sm:w-80">
+                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto justify-end items-center flex-wrap xl:flex-nowrap">
+                        <div className="relative w-full md:w-48 xl:w-56 shrink-0 group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                            </div>
+                            <Select
+                                value={selectedEntity}
+                                onChange={(e) => setSelectedEntity(e.target.value)}
+                                className="pl-9 cursor-pointer text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
+                                title="Filtrar por Título Identificador"
+                            >
+                                <option value="Todos">Todos</option>
+                                {uniqueEntities.filter(e => e !== 'Todos').map(entity => (
+                                    <option key={entity} value={entity} className="text-gray-900 dark:text-white">{entity}</option>
+                                ))}
+                            </Select>
+                        </div>
+
+                        <div className="relative w-full md:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                             </div>
@@ -73,21 +101,30 @@ export default function DocumentListFeature() {
                                 type="text"
                                 placeholder="Buscar por título..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    if (e.target.value) {
+                                        setSearchParams({ q: e.target.value });
+                                    } else {
+                                        setSearchParams({});
+                                    }
+                                }}
                                 className="pl-10"
                             />
                         </div>
 
-                        <div className="relative w-12 sm:w-64 shrink-0 group">
-                            <div className="absolute inset-0 sm:inset-y-0 sm:left-0 sm:pl-3 flex items-center justify-center sm:justify-start pointer-events-none">
-                                <Filter className="h-5 w-5 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                        <div className="relative w-full md:w-40 shrink-0 group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                             </div>
                             <Select
                                 value={selectedType}
                                 onChange={(e) => setSelectedType(e.target.value)}
-                                className="pl-10 cursor-pointer text-transparent sm:text-gray-900 dark:sm:text-white appearance-none sm:appearance-auto bg-transparent sm:bg-white dark:sm:bg-gray-950"
+                                className="pl-9 cursor-pointer text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
+                                title="Filtrar por Formato"
                             >
-                                {uniqueTypes.map(type => (
+                                <option value="Todos">Todos</option>
+                                {uniqueTypes.filter(t => t !== 'Todos').map(type => (
                                     <option key={type} value={type} className="text-gray-900 dark:text-white">{type}</option>
                                 ))}
                             </Select>
@@ -118,7 +155,8 @@ export default function DocumentListFeature() {
                         filteredDocuments.map((doc, index) => (
                             <li
                                 key={doc.id}
-                                className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4"
+                                className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer"
+                                onClick={() => setPreviewDoc(doc)}
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                             >
                                 <div className="flex items-start min-w-0 flex-1">
@@ -205,17 +243,7 @@ export default function DocumentListFeature() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 w-full xl:w-auto mt-6 xl:mt-0">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setPreviewDoc(doc)}
-                                        title="Visualizar Documento"
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 xl:px-3"
-                                        size="sm"
-                                    >
-                                        <Eye className="h-5 w-5 xl:h-4 xl:w-4 xl:mr-2" />
-                                        <span className="hidden xl:inline">Ver</span>
-                                    </Button>
+                                <div className="flex items-center gap-2 w-full xl:w-auto mt-6 xl:mt-0" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
                                         asChild
@@ -242,7 +270,7 @@ export default function DocumentListFeature() {
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        onClick={() => handleDelete(doc.id)}
+                                        onClick={() => setDocumentToDelete(doc.id)}
                                         className="flex-1 xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 xl:px-3"
                                         title="Excluir"
                                         size="sm"
@@ -293,6 +321,22 @@ export default function DocumentListFeature() {
                     </div>
                 </div>
             )}
+
+            {/* Confirm Delete Modal */}
+            <ConfirmModal
+                isOpen={!!documentToDelete}
+                title="Excluir Documento"
+                description="Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita."
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                onConfirm={() => {
+                    if (documentToDelete) {
+                        handleDelete(documentToDelete);
+                    }
+                }}
+                onCancel={() => setDocumentToDelete(null)}
+                isDestructive
+            />
         </>
     );
 }

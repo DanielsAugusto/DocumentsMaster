@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DashboardLayout from './pages/DashboardLayout';
+import Dashboard from './pages/Dashboard';
 import DocumentList from './pages/DocumentList';
 import NewDocument from './pages/NewDocument';
 import EditDocument from './pages/EditDocument';
@@ -37,7 +38,8 @@ function App() {
 
                             {/* Rotas Protegidas */}
                             <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
-                                <Route index element={<DocumentList />} />
+                                <Route index element={<Dashboard />} />
+                                <Route path="documentos" element={<DocumentList />} />
                                 <Route path="new" element={<NewDocument />} />
                                 <Route path="edit/:id" element={<EditDocument />} />
                                 <Route path="settings" element={<SettingsFeature />} />

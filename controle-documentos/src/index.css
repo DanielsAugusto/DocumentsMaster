@@ -11,8 +11,10 @@
 
 @layer base {
     :root {
-        --background: #ffffff;
-        --foreground: #09090b;
+        --background: #f1f5f9;
+        /* Slate 100 - Mais cinza/concreto macio */
+        --foreground: #1e293b;
+        /* Slate 800 - Softer black */
     }
 
     .dark {

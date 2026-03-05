@@ -55,10 +55,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     .from('user_settings')
                     .select('primary_color, font_scale')
                     .eq('user_id', user.id)
-                    .single();
+                    .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') {
-                    // PGRST116 is "No rows found" - which is fine, we just use defaults
+                if (error) {
                     console.error('Error loading settings:', error);
                 } else if (data) {
                     setSettings({
