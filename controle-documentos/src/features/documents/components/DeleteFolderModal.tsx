@@ -77,24 +77,21 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
                     </p>
 
                     <div className="mb-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <label htmlFor="deleteDocsCheckbox" className="flex items-start gap-3 cursor-pointer group">
-                            <div className="flex items-center h-5 mt-0.5">
-                                <input
-                                    id="deleteDocsCheckbox"
-                                    type="checkbox"
-                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                    checked={deleteDocuments}
-                                    onChange={(e) => setDeleteDocuments(e.target.checked)}
-                                />
-                            </div>
-                            <div className="flex flex-col">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                className="w-4 h-4 mt-0.5 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                checked={deleteDocuments}
+                                onChange={(e) => setDeleteDocuments(e.target.checked)}
+                            />
+                            <span className="flex flex-col">
                                 <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     Excluir também os arquivos contidos nela?
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Se desmarcado, os arquivos voltarão para a pasta inicial. Subpastas serão excluídas de qualquer forma.
                                 </span>
-                            </div>
+                            </span>
                         </label>
                     </div>
 

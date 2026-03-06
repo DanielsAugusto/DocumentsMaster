@@ -6,6 +6,80 @@ import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 
+function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDelete, onOpenFolder }: {
+    item: TrashItem;
+    isSelected: boolean;
+    onSelect: () => void;
+    onDeselect: () => void;
+    onRestore: () => void;
+    onDelete: () => void;
+    onOpenFolder: () => void;
+}) {
+    return (
+        <li
+            className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.type === 'folder' ? 'cursor-pointer' : ''}`}
+            role={item.type === 'folder' ? 'button' : undefined}
+            tabIndex={item.type === 'folder' ? 0 : undefined}
+            onClick={() => { if (item.type === 'folder') onOpenFolder(); }}
+            onKeyDown={(e) => { if (item.type === 'folder' && (e.key === 'Enter' || e.key === ' ')) onOpenFolder(); }}
+        >
+            <div className="flex items-start gap-4 flex-1 overflow-hidden">
+                <label className="mr-2 mt-3.5 flex items-start h-full cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => { if (e.target.checked) onSelect(); else onDeselect(); }}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                    />
+                </label>
+                <div className="mt-1 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg shrink-0">
+                    {item.type === 'folder'
+                        ? <Folder className="h-6 w-6 text-gray-400" />
+                        : <File className="h-6 w-6 text-gray-400" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-lg font-medium text-gray-900 dark:text-white truncate" title={item.name}>
+                        {item.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="capitalize">{item.type === 'folder' ? 'Pasta' : 'Documento'}</span>
+                        <span>•</span>
+                        <span>Excluído em {new Date(item.deleted_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            </div>
+            <div
+                className="flex items-center gap-2 shrink-0"
+                role="toolbar"
+                aria-label="Ações do item"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+            >
+                <Button
+                    variant="outline"
+                    size="sm"
+                    title="Restaurar"
+                    onClick={onRestore}
+                    className="text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-transform active:scale-95"
+                >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Restaurar
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Excluir Definitivamente"
+                    onClick={onDelete}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-transform active:scale-95"
+                >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Excluir</span>
+                </Button>
+            </div>
+        </li>
+    );
+}
+
 export default function Trash() {
     const queryClient = useQueryClient();
     const { currentWorkspace } = useWorkspace();
@@ -72,22 +146,12 @@ export default function Trash() {
         });
     }, [items, currentTrashFolderId]);
 
-    const isAllSelected = visibleItems.length > 0 && selectedItems.length === visibleItems.length; // eslint-disable-line @typescript-eslint/no-unused-vars
-
-    const toggleSelection = (item: TrashItem, checked: boolean) => {
-        if (checked) {
-            setSelectedItems(prev => [...prev, item]);
-        } else {
-            setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
-        }
+    const addSelection = (item: TrashItem) => {
+        setSelectedItems(prev => [...prev, item]);
     };
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-        if (e.target.checked) {
-            setSelectedItems([...visibleItems]);
-        } else {
-            setSelectedItems([]);
-        }
+    const removeSelection = (item: TrashItem) => {
+        setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
     };
 
     const handleMultiRestore = async () => {
@@ -221,7 +285,7 @@ export default function Trash() {
                         ))}
                     </ul>
                 </div>
-            ) : isEmpty ? (
+            ) : (isEmpty ? (
                 <div className="flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/20">
                     <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
                         <Trash2 className="h-10 w-10 text-gray-400 dark:text-gray-500" />
@@ -229,7 +293,7 @@ export default function Trash() {
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Lixeira vazia</h3>
                     <p className="text-gray-500 dark:text-gray-400 max-w-md">Não há nenhum documento ou pasta aguardando exclusão permanente.</p>
                 </div>
-            ) : visibleItems.length === 0 ? (
+            ) : (visibleItems.length === 0 ? (
                 <div className="text-center p-12 text-gray-500 dark:text-gray-400">
                     Esta pasta está vazia.
                 </div>
@@ -237,90 +301,23 @@ export default function Trash() {
                 <div className="bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                     <ul className="divide-y divide-gray-200 dark:divide-gray-800">
                         {visibleItems.map((item) => (
-                            <li
+                            <TrashItemRow
                                 key={item.id}
-                                className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.type === 'folder' ? 'cursor-pointer' : ''}`}
-                                role={item.type === 'folder' ? 'button' : undefined}
-                                tabIndex={item.type === 'folder' ? 0 : undefined}
-                                onClick={() => {
-                                    if (item.type === 'folder') {
-                                        setCurrentTrashFolderId(item.id);
-                                        setTrashFolderPath(p => [...p, { id: item.id, name: item.name }]);
-                                    }
+                                item={item}
+                                isSelected={selectedItems.some(i => i.id === item.id && i.type === item.type)}
+                                onSelect={() => addSelection(item)}
+                                onDeselect={() => removeSelection(item)}
+                                onRestore={() => setItemToConfirmRestore(item)}
+                                onDelete={() => setItemToConfirmDelete(item)}
+                                onOpenFolder={() => {
+                                    setCurrentTrashFolderId(item.id);
+                                    setTrashFolderPath(p => [...p, { id: item.id, name: item.name }]);
                                 }}
-                                onKeyDown={(e) => {
-                                    if (item.type === 'folder' && (e.key === 'Enter' || e.key === ' ')) {
-                                        setCurrentTrashFolderId(item.id);
-                                        setTrashFolderPath(p => [...p, { id: item.id, name: item.name }]);
-                                    }
-                                }}
-                            >
-                                <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                                    <div
-                                        className="mr-2 mt-3.5 flex items-start h-full cursor-pointer"
-                                        role="checkbox"
-                                        tabIndex={0}
-                                        aria-checked={selectedItems.some(i => i.id === item.id && i.type === item.type)}
-                                        onClick={(e) => { e.stopPropagation(); }}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedItems.some(i => i.id === item.id && i.type === item.type)}
-                                            onChange={(e) => toggleSelection(item, e.target.checked)}
-                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                                        />
-                                    </div>
-                                    <div className="mt-1 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg shrink-0">
-                                        {item.type === 'folder' ? (
-                                            <Folder className="h-6 w-6 text-gray-400" />
-                                        ) : (
-                                            <File className="h-6 w-6 text-gray-400" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-lg font-medium text-gray-900 dark:text-white truncate" title={item.name}>
-                                            {item.name}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                            <span className="capitalize">{item.type === 'folder' ? 'Pasta' : 'Documento'}</span>
-                                            <span>•</span>
-                                            <span>Excluído em {new Date(item.deleted_at).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="flex items-center gap-2 shrink-0"
-                                    role="group"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        title="Restaurar"
-                                        onClick={() => setItemToConfirmRestore(item)}
-                                        className="text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-transform active:scale-95"
-                                    >
-                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                        Restaurar
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        title="Excluir Definitivamente"
-                                        onClick={() => setItemToConfirmDelete(item)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-transform active:scale-95"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Excluir</span>
-                                    </Button>
-                                </div>
-                            </li>
+                            />
                         ))}
                     </ul>
                 </div>
-            )}
+            )))}
 
             <ConfirmModal
                 isOpen={isConfirmEmptyOpen}
@@ -359,7 +356,7 @@ export default function Trash() {
 
             <ConfirmModal
                 isOpen={isMultiDeleteModalOpen}
-                title={`Excluir definitivamente ${selectedItems.length === 1 ? '1 item' : selectedItems.length + ' itens'}`}
+                title={`Excluir definitivamente ${selectedItems.length === 1 ? '1 item' : String(selectedItems.length) + ' itens'}`}
                 description={`Tem certeza que deseja excluir permanentemente ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'}? Esta ação não pode ser desfeita.`}
                 confirmText={isMultiDeleting ? "Excluindo..." : "Excluir para sempre"}
                 cancelText="Cancelar"
@@ -370,7 +367,7 @@ export default function Trash() {
 
             <ConfirmModal
                 isOpen={isMultiRestoreModalOpen}
-                title={`Restaurar ${selectedItems.length === 1 ? '1 item' : selectedItems.length + ' itens'}`}
+                title={`Restaurar ${selectedItems.length === 1 ? '1 item' : String(selectedItems.length) + ' itens'}`}
                 description={`Deseja restaurar ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'}? ${selectedItems.length === 1 ? 'Ele será recolocado' : 'Eles serão recolocados'} na estrutura de pastas ativa.`}
                 confirmText={isMultiRestoring ? "Restaurando..." : "Restaurar itens"}
                 cancelText="Cancelar"

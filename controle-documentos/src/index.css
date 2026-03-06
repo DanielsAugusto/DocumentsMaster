@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-/* NOSONAR - Valid Tailwind CSS v4 syntax */
-@custom-variant dark (&:is(.dark *));
-@custom-variant hover (&:hover);
+@custom-variant dark (&:is(.dark *)); /* NOSONAR: Valid Tailwind CSS v4 at-rule */
+@custom-variant hover (&:hover); /* NOSONAR: Valid Tailwind CSS v4 at-rule */
 
 @theme {
     --color-background: var(--background);

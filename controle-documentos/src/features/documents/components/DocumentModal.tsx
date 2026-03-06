@@ -13,6 +13,113 @@ import { useDocument } from '../hooks/useDocument';
 import { useAllFolders } from '../hooks/useFolders';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 
+interface FolderSelectorProps {
+    folderId: string;
+    setFolderId: (id: string) => void;
+    allFolders: { id: string; name: string }[];
+    filteredFolders: { id: string; name: string }[];
+    isFetchingFolders: boolean;
+    folderSearch: string;
+    setFolderSearch: (s: string) => void;
+    isFolderDropdownOpen: boolean;
+    setIsFolderDropdownOpen: (open: boolean) => void;
+}
+
+function FolderSelector({
+    folderId, setFolderId, allFolders, filteredFolders,
+    isFetchingFolders, folderSearch, setFolderSearch,
+    isFolderDropdownOpen, setIsFolderDropdownOpen
+}: FolderSelectorProps) {
+    if (isFetchingFolders) {
+        return <div className="h-11 bg-gray-200 dark:bg-slate-700 animate-pulse rounded-md" />;
+    }
+
+    const selectedFolderName = folderId === 'root'
+        ? 'Sem Pasta (Diretório Raiz)'
+        : `📁 ${allFolders.find(f => f.id === folderId)?.name || '...'}`;
+
+    return (
+        <div className="relative mt-auto">
+            {isFolderDropdownOpen && (
+                <button
+                    type="button"
+                    className="fixed inset-0 z-40 bg-transparent border-none cursor-default"
+                    tabIndex={-1}
+                    onClick={(e) => { e.stopPropagation(); setIsFolderDropdownOpen(false); }}
+                    aria-label="Fechar dropdown de pastas"
+                />
+            )}
+            <button
+                type="button"
+                onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
+                className={`flex items-center justify-between w-full h-11 px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${isFolderDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 dark:border-gray-700'}`}
+            >
+                <span className="truncate text-gray-700 dark:text-gray-200 font-medium">
+                    {selectedFolderName}
+                </span>
+                <Search className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+            </button>
+
+            {isFolderDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-100">
+                    <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/50">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input
+                                type="text"
+                                placeholder="Pesquisar pasta existente..."
+                                value={folderSearch}
+                                onChange={(e) => setFolderSearch(e.target.value)}
+                                className="pl-9 h-9 border-gray-200 dark:border-gray-700 focus-visible:ring-blue-500 bg-white dark:bg-slate-900 text-sm"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        e.stopPropagation();
+                                        setIsFolderDropdownOpen(false);
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto p-1.5 custom-scrollbar">
+                        <button
+                            type="button"
+                            className={`w-full text-left px-3 py-2.5 text-sm rounded-md transition-colors ${folderId === 'root' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                            onClick={() => { setFolderId('root'); setIsFolderDropdownOpen(false); setFolderSearch(''); }}
+                        >
+                            Sem Pasta (Diretório Raiz)
+                        </button>
+
+                        {filteredFolders.length > 0 && (
+                            <div className="px-3 py-1.5 mt-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                Suas Pastas
+                            </div>
+                        )}
+
+                        {filteredFolders.map(folder => (
+                            <button
+                                key={folder.id}
+                                type="button"
+                                className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm rounded-md transition-colors ${folderId === folder.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => { setFolderId(folder.id); setIsFolderDropdownOpen(false); setFolderSearch(''); }}
+                            >
+                                <span className="text-amber-500">📁</span>
+                                <span className="truncate">{folder.name}</span>
+                            </button>
+                        ))}
+
+                        {folderSearch && filteredFolders.length === 0 && (
+                            <div className="px-3 py-6 text-sm text-center text-gray-500">
+                                Nenhuma pasta compatível encontrada.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 interface DocumentModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -207,106 +314,17 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Pode organizar em uma de suas pastas ativas.</p>
                                     </div>
 
-                                    {isFetchingFolders ? (
-                                        <div className="h-11 bg-gray-200 dark:bg-slate-700 animate-pulse rounded-md" />
-                                    ) : (
-                                        <div className="relative mt-auto">
-                                            {isFolderDropdownOpen && (
-                                                <div
-                                                    className="fixed inset-0 z-40"
-                                                    role="button"
-                                                    tabIndex={-1}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setIsFolderDropdownOpen(false);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                            e.stopPropagation();
-                                                            setIsFolderDropdownOpen(false);
-                                                        }
-                                                    }}
-                                                />
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
-                                                className={`flex items-center justify-between w-full h-11 px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${isFolderDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 dark:border-gray-700'}`}
-                                            >
-                                                <span className="truncate text-gray-700 dark:text-gray-200 font-medium">
-                                                    {folderId === 'root'
-                                                        ? 'Sem Pasta (Diretório Raiz)'
-                                                        : `📁 ${allFolders.find(f => f.id === folderId)?.name || '...'}`}
-                                                </span>
-                                                <Search className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
-                                            </button>
-
-                                            {isFolderDropdownOpen && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-100">
-                                                    <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/50">
-                                                        <div className="relative">
-                                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                                                            <Input
-                                                                type="text"
-                                                                placeholder="Pesquisar pasta existente..."
-                                                                value={folderSearch}
-                                                                onChange={(e) => setFolderSearch(e.target.value)}
-                                                                className="pl-9 h-9 border-gray-200 dark:border-gray-700 focus-visible:ring-blue-500 bg-white dark:bg-slate-900 text-sm"
-                                                                autoFocus
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Escape') {
-                                                                        e.stopPropagation();
-                                                                        setIsFolderDropdownOpen(false);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="max-h-52 overflow-y-auto p-1.5 custom-scrollbar">
-                                                        <button
-                                                            type="button"
-                                                            className={`w-full text-left px-3 py-2.5 text-sm rounded-md transition-colors ${folderId === 'root' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
-                                                            onClick={() => {
-                                                                setFolderId('root');
-                                                                setIsFolderDropdownOpen(false);
-                                                                setFolderSearch('');
-                                                            }}
-                                                        >
-                                                            Sem Pasta (Diretório Raiz)
-                                                        </button>
-
-                                                        {filteredFolders.length > 0 && (
-                                                            <div className="px-3 py-1.5 mt-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                                                Suas Pastas
-                                                            </div>
-                                                        )}
-
-                                                        {filteredFolders.map(folder => (
-                                                            <button
-                                                                key={folder.id}
-                                                                type="button"
-                                                                className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm rounded-md transition-colors ${folderId === folder.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
-                                                                onClick={() => {
-                                                                    setFolderId(folder.id);
-                                                                    setIsFolderDropdownOpen(false);
-                                                                    setFolderSearch('');
-                                                                }}
-                                                            >
-                                                                <span className="text-amber-500">📁</span>
-                                                                <span className="truncate">{folder.name}</span>
-                                                            </button>
-                                                        ))}
-
-                                                        {folderSearch && filteredFolders.length === 0 && (
-                                                            <div className="px-3 py-6 text-sm text-center text-gray-500">
-                                                                Nenhuma pasta compatível encontrada.
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    <FolderSelector
+                                        folderId={folderId}
+                                        setFolderId={setFolderId}
+                                        allFolders={allFolders}
+                                        filteredFolders={filteredFolders}
+                                        isFetchingFolders={isFetchingFolders}
+                                        folderSearch={folderSearch}
+                                        setFolderSearch={setFolderSearch}
+                                        isFolderDropdownOpen={isFolderDropdownOpen}
+                                        setIsFolderDropdownOpen={setIsFolderDropdownOpen}
+                                    />
                                 </div>
                             </div>
 
@@ -398,7 +416,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                             <div className="space-y-3 pt-2">
                                 <Label htmlFor="drive_url" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Link de Armazenamento Real
-                                    <span className="text-red-500 ml-1">*</span>
+                                    {' '}<span className="text-red-500 ml-1">*</span>
                                 </Label>
                                 <Input
                                     type="url"
@@ -432,7 +450,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                         className="w-full sm:w-auto"
                         disabled={loading || isFetchingDoc}
                     >
-                        {loading ? 'Salvando...' : documentId ? 'Atualizar Metadados' : 'Gerar e Salvar'}
+                        {loading ? 'Salvando...' : (documentId ? 'Atualizar Metadados' : 'Gerar e Salvar')}
                     </Button>
                 </div>
             </div>

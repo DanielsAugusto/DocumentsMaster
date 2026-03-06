@@ -195,7 +195,7 @@ export default function DashboardFeature() {
                             <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800"></div>
                             <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800 rounded-r-full"></div>
                         </div>
-                    ) : metrics.total <= 0 ? (
+                    ) : (metrics.total <= 0 ? (
                         <div className="text-sm text-gray-400 dark:text-gray-500 mt-2">Nenhum documento para classificar.</div>
                     ) : (
                         <div className="space-y-4">
@@ -216,7 +216,7 @@ export default function DashboardFeature() {
                                 {Boolean(metrics.types.other) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-gray-400 mr-2"></span> Outros ({metrics.types.other})</div>}
                             </div>
                         </div>
-                    )}
+                    ))}
                 </div>
             </div>
 
@@ -252,7 +252,7 @@ export default function DashboardFeature() {
                                             <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
                                         </tr>
                                     ))
-                                ) : recentDocuments.length === 0 ? (
+                                ) : ((recentDocuments.length === 0) ? (
                                     <tr>
                                         <td colSpan={3} className="px-6 py-12 text-center text-gray-500">Nenhum documento recente.</td>
                                     </tr>
@@ -294,7 +294,7 @@ export default function DashboardFeature() {
                                             </td>
                                         </tr>
                                     ))
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     </div>

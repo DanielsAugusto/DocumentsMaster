@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload } from 'lucide-react';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload } from 'lucide-react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -87,14 +87,14 @@ export default function DocumentListFeature() {
         }
 
         // Clear location state to prevent running this again on subsequent renders
-        window.history.replaceState({}, document.title);
+        globalThis.history.replaceState({}, document.title);
     }, [location.state?.folderId, location.state?.focusDocumentId, allFoldersData]);
 
     useEffect(() => {
         if (location.state?.openNewDocument) {
             setDocumentToEditId(null);
             setIsDocumentModalOpen(true);
-            window.history.replaceState({}, document.title);
+            globalThis.history.replaceState({}, document.title);
         }
     }, [location.state?.openNewDocument]);
 
@@ -179,20 +179,20 @@ export default function DocumentListFeature() {
             await queryClient.invalidateQueries({ queryKey: ['documents'] });
             setSelectedItems([]);
             setIsMultiDeleteModalOpen(false);
-        } catch (error) {
-            // Error handled by UI alert below
+        } catch (err) {
+            console.error('Erro ao excluir itens selecionados:', err);
             alert('Um erro ocorreu ao excluir os itens selecionados.');
         } finally {
             setIsMultiDeleting(false);
         }
     };
 
-    const toggleSelection = (item: SelectedItem, isSelected: boolean) => {
-        if (isSelected) {
-            setSelectedItems(prev => [...prev, item]);
-        } else {
-            setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
-        }
+    const addSelection = (item: SelectedItem) => {
+        setSelectedItems(prev => [...prev, item]);
+    };
+
+    const removeSelection = (item: SelectedItem) => {
+        setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
     };
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,11 +222,11 @@ export default function DocumentListFeature() {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch =
                 doc.title.toLowerCase().includes(searchLower) ||
-                (doc.entity_name && doc.entity_name.toLowerCase().includes(searchLower)) ||
-                (doc.subject && doc.subject.toLowerCase().includes(searchLower)) ||
-                (doc.keywords && doc.keywords.toLowerCase().includes(searchLower)) ||
-                (doc.sender && doc.sender.toLowerCase().includes(searchLower)) ||
-                (doc.recipient && doc.recipient.toLowerCase().includes(searchLower));
+                doc.entity_name?.toLowerCase().includes(searchLower) ||
+                doc.subject?.toLowerCase().includes(searchLower) ||
+                doc.keywords?.toLowerCase().includes(searchLower) ||
+                doc.sender?.toLowerCase().includes(searchLower) ||
+                doc.recipient?.toLowerCase().includes(searchLower);
 
             const matchesType =
                 selectedType === 'Todos' ||
@@ -249,7 +249,7 @@ export default function DocumentListFeature() {
         const tags = new Set(
             allDocuments.flatMap((doc) => parseKeywordTags(doc.keywords))
         );
-        return Array.from(tags) as string[];
+        return Array.from(tags);
     }, [allDocuments]);
 
     const visibleFolders =
@@ -266,11 +266,11 @@ export default function DocumentListFeature() {
         setFocusedDocumentId(pendingDocumentFocusId);
         setPendingDocumentFocusId(null);
 
-        const timeout = window.setTimeout(() => {
+        const timeout = globalThis.setTimeout(() => {
             setFocusedDocumentId(null);
         }, 1800);
 
-        return () => window.clearTimeout(timeout);
+        return () => globalThis.clearTimeout(timeout);
     }, [pendingDocumentFocusId, filteredDocuments]);
 
     const isAllSelected = (visibleFolders.length > 0 || filteredDocuments.length > 0) &&
@@ -397,7 +397,7 @@ export default function DocumentListFeature() {
                                                     onChange={() => setSelectedKeywords([])}
                                                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 />
-                                                Todos
+                                                {' '}Todos
                                             </label>
 
                                             {uniqueKeywordTags.map((tag) => (
@@ -498,7 +498,7 @@ export default function DocumentListFeature() {
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                     {/* Skeleton Loading State */}
                     {(loading || loadingFolders) && Array.from({ length: 3 }).map((_, idx) => (
-                        <li key={idx} className="p-6 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-6 animate-pulse">
+                        <li key={`skeleton-${String(idx)}`} className="p-6 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-6 animate-pulse">
                             <div className="flex items-start flex-1 min-w-0">
                                 <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded mr-4 mt-1 flex-shrink-0"></div>
                                 <div className="flex-1 space-y-3">
@@ -514,6 +514,8 @@ export default function DocumentListFeature() {
                     {!loading && !loadingFolders && visibleFolders.length > 0 && visibleFolders.map((folder, index) => (
                         <li
                             key={folder.id}
+                            role="button"
+                            tabIndex={0}
                             style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
                             className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 animate-in fade-in slide-in-from-bottom-4 group cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                             onClick={() => {
@@ -521,13 +523,23 @@ export default function DocumentListFeature() {
                                 setFolderPath(path => [...path, folder]);
                                 setSelectedType('Todos');
                             }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    setCurrentFolderId(folder.id);
+                                    setFolderPath(path => [...path, folder]);
+                                    setSelectedType('Todos');
+                                }
+                            }}
                         >
                             <div className="flex items-center min-w-0">
-                                <div className="mr-4 flex items-center h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); }}>
+                                <div className="mr-4 flex items-center h-full cursor-pointer" role="group" tabIndex={-1} onClick={(e) => { e.stopPropagation(); }} onKeyDown={(e) => { e.stopPropagation(); }}>
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
-                                        onChange={(e) => toggleSelection({ id: folder.id, type: 'folder', name: folder.name }, e.target.checked)}
+                                        onChange={(e) => {
+                                            const item = { id: folder.id, type: 'folder' as const, name: folder.name };
+                                            if (e.target.checked) addSelection(item); else removeSelection(item);
+                                        }}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
                                     />
                                 </div>
@@ -540,7 +552,7 @@ export default function DocumentListFeature() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity" role="group" tabIndex={-1} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                 <Button
                                     variant="outline"
                                     onClick={() => {
@@ -587,19 +599,25 @@ export default function DocumentListFeature() {
                         filteredDocuments.map((doc, index) => (
                             <li
                                 key={doc.id}
+                                role="button"
+                                tabIndex={0}
                                 ref={(element) => {
                                     documentCardRefs.current[doc.id] = element;
                                 }}
                                 className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 onClick={() => setPreviewDoc(doc)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setPreviewDoc(doc); }}
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                             >
                                 <div className="flex items-start min-w-0 flex-1">
-                                    <div className="mr-4 mt-2.5 flex items-start h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); }}>
+                                    <div className="mr-4 mt-2.5 flex items-start h-full cursor-pointer" role="group" tabIndex={-1} onClick={(e) => { e.stopPropagation(); }} onKeyDown={(e) => { e.stopPropagation(); }}>
                                         <input
                                             type="checkbox"
                                             checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
-                                            onChange={(e) => toggleSelection({ id: doc.id, type: 'document', name: doc.title }, e.target.checked)}
+                                            onChange={(e) => {
+                                                const item = { id: doc.id, type: 'document' as const, name: doc.title };
+                                                if (e.target.checked) addSelection(item); else removeSelection(item);
+                                            }}
                                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
                                         />
                                     </div>
@@ -675,7 +693,7 @@ export default function DocumentListFeature() {
                                         </div>
 
                                         <div
-                                            className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id)
+                                            className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.some((folder) => folder.id === doc.folder_id)
                                                 ? 'justify-between'
                                                 : 'justify-end'
                                                 }`}
@@ -715,7 +733,7 @@ export default function DocumentListFeature() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity" role="group" tabIndex={-1} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
                                         onClick={() => {
@@ -772,9 +790,11 @@ export default function DocumentListFeature() {
             {/* Preview Modal */}
             {previewDoc && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-                    <div
-                        className="fixed inset-0 bg-black/60 transition-opacity"
+                    <button
+                        type="button"
+                        className="fixed inset-0 bg-black/60 transition-opacity border-none cursor-default"
                         onClick={() => setPreviewDoc(null)}
+                        aria-label="Fechar preview"
                     />
                     <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-900/50">
@@ -825,7 +845,7 @@ export default function DocumentListFeature() {
             {/* Confirm Multi-Delete Modal */}
             <ConfirmModal
                 isOpen={isMultiDeleteModalOpen}
-                title={`Excluir ${selectedItems.length === 1 ? '1 item' : `${selectedItems.length} itens`}`}
+                title={`Excluir ${selectedItems.length === 1 ? '1 item' : String(selectedItems.length) + ' itens'}`}
                 description={`Tem certeza que deseja mover ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'} para a lixeira?`}
                 confirmText={isMultiDeleting ? "Excluindo..." : "Mover para lixeira"}
                 cancelText="Cancelar"
