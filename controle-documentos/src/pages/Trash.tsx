@@ -24,11 +24,20 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
             onKeyDown={(e) => { if (item.type === 'folder' && (e.key === 'Enter' || e.key === ' ')) onOpenFolder(); }}
         >
             <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                <label className="mr-2 mt-3.5 flex items-start h-full cursor-pointer">
+                <label
+                    className="mr-2 mt-1.5 -m-3 p-3 flex items-start h-full cursor-pointer touch-manipulation"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (isSelected) onDeselect();
+                        else onSelect();
+                    }}
+                >
                     <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => { if (e.target.checked) onSelect(); else onDeselect(); }}
+                        onClick={(e) => e.stopPropagation()}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
                     />
                 </label>
