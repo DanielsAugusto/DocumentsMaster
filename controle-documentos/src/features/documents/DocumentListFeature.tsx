@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload } from 'lucide-react';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -20,6 +20,30 @@ import { ImportDriveModal } from './components/ImportDriveModal';
 import { DocumentModal } from './components/DocumentModal';
 import { RenameFolderModal } from './components/RenameFolderModal';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+
+interface KeywordTagItemProps {
+    tag: string;
+    isChecked: boolean;
+    onSelect: () => void;
+    onDeselect: () => void;
+}
+
+function KeywordTagItem({ tag, isChecked, onSelect, onDeselect }: Readonly<KeywordTagItemProps>) {
+    return (
+        <label className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer">
+            <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={(e) => {
+                    if (e.target.checked) onSelect();
+                    else onDeselect();
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="truncate">{tag}</span>
+        </label>
+    );
+}
 
 export default function DocumentListFeature() {
     const { currentWorkspace } = useWorkspace();
@@ -109,6 +133,14 @@ export default function DocumentListFeature() {
     const documentCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
     const [pendingDocumentFocusId, setPendingDocumentFocusId] = useState<string | null>(null);
     const [focusedDocumentId, setFocusedDocumentId] = useState<string | null>(null);
+
+    const handleTagSelect = useCallback((tag: string) => {
+        setSelectedKeywords((prev) => [...prev, tag]);
+    }, []);
+
+    const handleTagDeselect = useCallback((tag: string) => {
+        setSelectedKeywords((prev) => prev.filter((item) => item !== tag));
+    }, []);
 
     const parseKeywordTags = (keywords?: string | null) => {
         if (!keywords) return [];
@@ -401,24 +433,13 @@ export default function DocumentListFeature() {
                                             </label>
 
                                             {uniqueKeywordTags.map((tag) => (
-                                                <label
+                                                <KeywordTagItem
                                                     key={tag}
-                                                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedKeywords.includes(tag)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setSelectedKeywords((prev) => [...prev, tag]);
-                                                            } else {
-                                                                setSelectedKeywords((prev) => prev.filter((item) => item !== tag));
-                                                            }
-                                                        }}
-                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                    />
-                                                    <span className="truncate">{tag}</span>
-                                                </label>
+                                                    tag={tag}
+                                                    isChecked={selectedKeywords.includes(tag)}
+                                                    onSelect={() => handleTagSelect(tag)}
+                                                    onDeselect={() => handleTagDeselect(tag)}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -514,79 +535,87 @@ export default function DocumentListFeature() {
                     {!loading && !loadingFolders && visibleFolders.length > 0 && visibleFolders.map((folder, index) => (
                         <li
                             key={folder.id}
-                            role="button"
-                            tabIndex={0}
                             style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
-                            className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 animate-in fade-in slide-in-from-bottom-4 group cursor-pointer border-l-4 border-transparent hover:border-blue-500"
-                            onClick={() => {
-                                setCurrentFolderId(folder.id);
-                                setFolderPath(path => [...path, folder]);
-                                setSelectedType('Todos');
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
+                            className="flex animate-in fade-in slide-in-from-bottom-4 group"
+                        >
+                            <button
+                                type="button"
+                                className="flex-1 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                onClick={() => {
                                     setCurrentFolderId(folder.id);
                                     setFolderPath(path => [...path, folder]);
                                     setSelectedType('Todos');
-                                }
-                            }}
-                        >
-                            <div className="flex items-center min-w-0">
-                                <div className="mr-4 flex items-center h-full cursor-pointer" role="group" tabIndex={-1} onClick={(e) => { e.stopPropagation(); }} onKeyDown={(e) => { e.stopPropagation(); }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
-                                        onChange={(e) => {
-                                            const item = { id: folder.id, type: 'folder' as const, name: folder.name };
-                                            if (e.target.checked) addSelection(item); else removeSelection(item);
+                                }}
+                            >
+                                <div className="flex items-center min-w-0">
+                                    <div className="mr-4 flex items-center h-full">
+                                        <input
+                                            type="checkbox"
+                                            aria-label={`Selecionar pasta ${folder.name}`}
+                                            checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => {
+                                                const item = { id: folder.id, type: 'folder' as const, name: folder.name };
+                                                if (e.target.checked) addSelection(item); else removeSelection(item);
+                                            }}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                        />
+                                    </div>
+                                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
+                                        <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
+                                    </div>
+                                    <div>
+                                        <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                                            {folder.name}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFolderToRename(folder);
+                                            setIsRenameFolderOpen(true);
                                         }}
-                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                                    />
+                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        size="sm"
+                                        title="Renomear Pasta"
+                                    >
+                                        <Edit2 className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Renomear</span>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFolderToMove(folder);
+                                        }}
+                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        title="Mover de pasta"
+                                        size="sm"
+                                    >
+                                        <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Mover</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFolderToDelete(folder);
+                                        }}
+                                        className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-0 sm:px-3 h-8 sm:h-9"
+                                        size="sm"
+                                        title="Excluir Pasta"
+                                    >
+                                        <Trash2 className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Excluir</span>
+                                    </Button>
                                 </div>
-                                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
-                                    <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
-                                </div>
-                                <div>
-                                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                                        {folder.name}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity" role="group" tabIndex={-1} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setFolderToRename(folder);
-                                        setIsRenameFolderOpen(true);
-                                    }}
-                                    className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
-                                    size="sm"
-                                    title="Renomear Pasta"
-                                >
-                                    <Edit2 className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Renomear</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setFolderToMove(folder)}
-                                    className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
-                                    title="Mover de pasta"
-                                    size="sm"
-                                >
-                                    <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Mover</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => setFolderToDelete(folder)}
-                                    className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-0 sm:px-3 h-8 sm:h-9"
-                                    size="sm"
-                                    title="Excluir Pasta"
-                                >
-                                    <Trash2 className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Excluir</span>
-                                </Button>
-                            </div>
+                            </button>
                         </li>
                     ))}
 
@@ -599,188 +628,202 @@ export default function DocumentListFeature() {
                         filteredDocuments.map((doc, index) => (
                             <li
                                 key={doc.id}
-                                role="button"
-                                tabIndex={0}
                                 ref={(element) => {
                                     documentCardRefs.current[doc.id] = element;
                                 }}
-                                className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
-                                onClick={() => setPreviewDoc(doc)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setPreviewDoc(doc); }}
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                className={`flex animate-in fade-in slide-in-from-bottom-4 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             >
-                                <div className="flex items-start min-w-0 flex-1">
-                                    <div className="mr-4 mt-2.5 flex items-start h-full cursor-pointer" role="group" tabIndex={-1} onClick={(e) => { e.stopPropagation(); }} onKeyDown={(e) => { e.stopPropagation(); }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
-                                            onChange={(e) => {
-                                                const item = { id: doc.id, type: 'document' as const, name: doc.title };
-                                                if (e.target.checked) addSelection(item); else removeSelection(item);
-                                            }}
-                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                                        />
-                                    </div>
-                                    {(() => {
-                                        const type = doc.type?.toUpperCase() || '';
-                                        if (type === 'PDF') {
-                                            return (
-                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mr-4 flex-shrink-0 border border-red-200 dark:border-red-800/60 shadow-sm mt-1">
-                                                    <FileText className="h-6 w-6" />
-                                                </div>
-                                            );
-                                        }
-                                        if (type.includes('WORD') || type.includes('DOC')) {
-                                            return (
-                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 mr-4 flex-shrink-0 border border-blue-200 dark:border-blue-800/60 shadow-sm mt-1">
-                                                    <FileText className="h-6 w-6" />
-                                                </div>
-                                            );
-                                        }
-                                        if (type.includes('EXCEL') || type.includes('XLS') || type.includes('PLANILHA')) {
-                                            return (
-                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mr-4 flex-shrink-0 border border-emerald-200 dark:border-emerald-800/60 shadow-sm mt-1">
-                                                    <FileSpreadsheet className="h-6 w-6" />
-                                                </div>
-                                            );
-                                        }
-                                        if (type.includes('IMAGEM') || type.includes('IMAGE') || type.includes('JPEG') || type.includes('PNG') || type.includes('JPG')) {
-                                            return (
-                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 mr-4 flex-shrink-0 border border-purple-200 dark:border-purple-800/60 shadow-sm mt-1">
-                                                    <FileImage className="h-6 w-6" />
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mr-4 flex-shrink-0 border border-gray-200 dark:border-gray-700 shadow-sm mt-1">
-                                                <FileIcon className="h-6 w-6" />
-                                            </div>
-                                        );
-                                    })()}
-                                    <div className="min-w-0 flex-1 2xl:grid 2xl:grid-cols-2 2xl:gap-4">
-                                        <div className="space-y-1">
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                {doc.keywords && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                                                        {doc.keywords}
-                                                    </span>
-                                                )}
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
-                                                    {doc.type}
-                                                </span>
-                                            </div>
-
-                                            <p className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-                                                {doc.title}
-                                            </p>
-
-                                            {doc.subject && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                                                    Assunto: <span className="font-medium text-gray-900 dark:text-gray-200">{doc.subject}</span>
-                                                </p>
-                                            )}
-
-                                            {doc.entity_name && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
-                                                    Entidade principal: <span className="font-medium text-gray-900 dark:text-gray-200">{doc.entity_name}</span>
-                                                </p>
-                                            )}
-
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 pt-1">
-                                                {doc.sender && <p>De: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.sender}</span></p>}
-                                                {doc.recipient && <p>Para: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.recipient}</span></p>}
-                                            </div>
+                                <button
+                                    type="button"
+                                    className="flex-1 p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                    onClick={() => setPreviewDoc(doc)}
+                                >
+                                    <div className="flex items-start min-w-0 flex-1">
+                                        <div className="mr-4 mt-2.5 flex items-start h-full">
+                                            <input
+                                                type="checkbox"
+                                                aria-label={`Selecionar documento ${doc.title}`}
+                                                checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => {
+                                                    const item = { id: doc.id, type: 'document' as const, name: doc.title };
+                                                    if (e.target.checked) addSelection(item); else removeSelection(item);
+                                                }}
+                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                            />
                                         </div>
-
-                                        <div
-                                            className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.some((folder) => folder.id === doc.folder_id)
-                                                ? 'justify-between'
-                                                : 'justify-end'
-                                                }`}
-                                        >
-                                            {(isGlobalDocumentSearch || !currentFolderId) && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (!doc.folder_id) return;
-                                                        setCurrentFolderId(doc.folder_id);
-                                                        setFolderPath(buildFolderPath(doc.folder_id));
-                                                        setSelectedType('Todos');
-                                                        setPendingDocumentFocusId(doc.id);
-                                                    }}
-                                                    className="flex items-center gap-2.5 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-3.5 py-2 rounded-md text-base max-w-[260px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-                                                    title="Abrir pasta e localizar arquivo"
-                                                >
-                                                    <Folder className="h-[18px] w-[18px] shrink-0 text-amber-500" />
-                                                    <span className="truncate">{allFoldersData.find((folder) => folder.id === doc.folder_id)?.name}</span>
-                                                </button>
-                                            )}
-                                            <div className="text-right space-y-0.5">
-                                                {doc.document_date && (
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Data do Doc.</p>
-                                                        <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
-                                                            {new Date(doc.document_date + 'T12:00:00Z').toLocaleDateString()}
-                                                        </p>
+                                        {(() => {
+                                            const type = doc.type?.toUpperCase() || '';
+                                            if (type === 'PDF') {
+                                                return (
+                                                    <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mr-4 flex-shrink-0 border border-red-200 dark:border-red-800/60 shadow-sm mt-1">
+                                                        <FileText className="h-6 w-6" />
                                                     </div>
-                                                )}
-                                                <p className="text-xs text-gray-400 dark:text-gray-500">
-                                                    Salvo em <time>{new Date(doc.created_at).toLocaleDateString()}</time>
+                                                );
+                                            }
+                                            if (type.includes('WORD') || type.includes('DOC')) {
+                                                return (
+                                                    <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 mr-4 flex-shrink-0 border border-blue-200 dark:border-blue-800/60 shadow-sm mt-1">
+                                                        <FileText className="h-6 w-6" />
+                                                    </div>
+                                                );
+                                            }
+                                            if (type.includes('EXCEL') || type.includes('XLS') || type.includes('PLANILHA')) {
+                                                return (
+                                                    <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mr-4 flex-shrink-0 border border-emerald-200 dark:border-emerald-800/60 shadow-sm mt-1">
+                                                        <FileSpreadsheet className="h-6 w-6" />
+                                                    </div>
+                                                );
+                                            }
+                                            if (type.includes('IMAGEM') || type.includes('IMAGE') || type.includes('JPEG') || type.includes('PNG') || type.includes('JPG')) {
+                                                return (
+                                                    <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 mr-4 flex-shrink-0 border border-purple-200 dark:border-purple-800/60 shadow-sm mt-1">
+                                                        <FileImage className="h-6 w-6" />
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mr-4 flex-shrink-0 border border-gray-200 dark:border-gray-700 shadow-sm mt-1">
+                                                    <FileIcon className="h-6 w-6" />
+                                                </div>
+                                            );
+                                        })()}
+                                        <div className="min-w-0 flex-1 2xl:grid 2xl:grid-cols-2 2xl:gap-4">
+                                            <div className="space-y-1">
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    {doc.keywords && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                                            {doc.keywords}
+                                                        </span>
+                                                    )}
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                                        {doc.type}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                                                    {doc.title}
                                                 </p>
+
+                                                {doc.subject && (
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                        Assunto: <span className="font-medium text-gray-900 dark:text-gray-200">{doc.subject}</span>
+                                                    </p>
+                                                )}
+
+                                                {doc.entity_name && (
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
+                                                        Entidade principal: <span className="font-medium text-gray-900 dark:text-gray-200">{doc.entity_name}</span>
+                                                    </p>
+                                                )}
+
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 pt-1">
+                                                    {doc.sender && <p>De: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.sender}</span></p>}
+                                                    {doc.recipient && <p>Para: <span className="font-medium text-gray-700 dark:text-gray-300">{doc.recipient}</span></p>}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.some((folder) => folder.id === doc.folder_id)
+                                                    ? 'justify-between'
+                                                    : 'justify-end'
+                                                    }`}
+                                            >
+                                                {(isGlobalDocumentSearch || !currentFolderId) && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id) && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (!doc.folder_id) return;
+                                                            setCurrentFolderId(doc.folder_id);
+                                                            setFolderPath(buildFolderPath(doc.folder_id));
+                                                            setSelectedType('Todos');
+                                                            setPendingDocumentFocusId(doc.id);
+                                                        }}
+                                                        className="flex items-center gap-2.5 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-3.5 py-2 rounded-md text-base max-w-[260px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                                        title="Abrir pasta e localizar arquivo"
+                                                    >
+                                                        <Folder className="h-[18px] w-[18px] shrink-0 text-amber-500" />
+                                                        <span className="truncate">{allFoldersData.find((folder) => folder.id === doc.folder_id)?.name}</span>
+                                                    </button>
+                                                )}
+                                                <div className="text-right space-y-0.5">
+                                                    {doc.document_date && (
+                                                        <div>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">Data do Doc.</p>
+                                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
+                                                                {new Date(doc.document_date + 'T12:00:00Z').toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                                                        Salvo em <time>{new Date(doc.created_at).toLocaleDateString()}</time>
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity" role="group" tabIndex={-1} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setDocumentToEditId(doc.id);
-                                            setIsDocumentModalOpen(true);
-                                        }}
-                                        title="Editar Documento"
-                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
-                                        size="sm"
-                                    >
-                                        <Edit2 className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Editar</span>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        asChild
-                                        title="Abrir no Google Drive"
-                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
-                                        size="sm"
-                                    >
-                                        <a href={doc.drive_url} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Drive</span>
-                                        </a>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setDocumentToMove(doc)}
-                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
-                                        title="Mover de pasta"
-                                        size="sm"
-                                    >
-                                        <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Mover</span>
-                                    </Button>
+                                    <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity">
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDocumentToEditId(doc.id);
+                                                setIsDocumentModalOpen(true);
+                                            }}
+                                            title="Editar Documento"
+                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            size="sm"
+                                        >
+                                            <Edit2 className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Editar</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            asChild
+                                            title="Abrir no Google Drive"
+                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            size="sm"
+                                        >
+                                            <a href={doc.drive_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                <ExternalLink className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Drive</span>
+                                            </a>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDocumentToMove(doc);
+                                            }}
+                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            title="Mover de pasta"
+                                            size="sm"
+                                        >
+                                            <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Mover</span>
+                                        </Button>
 
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => setDocumentToDelete(doc.id)}
-                                        className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
-                                        title="Excluir"
-                                        size="sm"
-                                    >
-                                        <Trash2 className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Excluir</span>
-                                    </Button>
-                                </div>
+                                        <Button
+                                            variant="ghost"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDocumentToDelete(doc.id);
+                                            }}
+                                            className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
+                                            title="Excluir"
+                                            size="sm"
+                                        >
+                                            <Trash2 className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Excluir</span>
+                                        </Button>
+                                    </div>
+                                </button>
                             </li>
                         ))
                     )}

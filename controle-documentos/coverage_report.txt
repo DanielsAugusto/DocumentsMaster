@@ -1,0 +1,102 @@
+
+> controle-documentos@0.0.0 test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/adrielportoantunes/Documents/DocumentsMaster/controle-documentos[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m test/pages/DocumentList.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m test/components/layout/Header.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 159[2mms[22m[39m
+ [32m✓[39m test/pages/Dashboard.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 446[2mms[22m[39m
+     [33m[2m✓[22m[39m renders dashboard correctly [33m 329[2mms[22m[39m
+ [32m✓[39m test/features/auth/LoginFeature.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1238[2mms[22m[39m
+     [33m[2m✓[22m[39m renders login form correctly [33m 795[2mms[22m[39m
+ [32m✓[39m test/features/auth/RegisterFeature.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1265[2mms[22m[39m
+     [33m[2m✓[22m[39m renders register form correctly [33m 796[2mms[22m[39m
+     [33m[2m✓[22m[39m calls signUp and navigates on success [33m 310[2mms[22m[39m
+ [32m✓[39m test/components/layout/Sidebar.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1225[2mms[22m[39m
+     [33m[2m✓[22m[39m handles logout flow correctly [33m 1049[2mms[22m[39m
+ [32m✓[39m test/pages/Trash.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1626[2mms[22m[39m
+     [33m[2m✓[22m[39m opens restore confirmation modal when restore button is clicked [33m 1097[2mms[22m[39m
+ [32m✓[39m test/features/documents/components/DocumentModal.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1627[2mms[22m[39m
+     [33m[2m✓[22m[39m renders creation mode correctly [33m 305[2mms[22m[39m
+     [33m[2m✓[22m[39m handles folder selection [33m 1060[2mms[22m[39m
+ [32m✓[39m test/pages/Login.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m test/pages/Register.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m test/features/documents/api/folders.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m test/features/documents/api/drive.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m test/features/documents/DocumentListFeature.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 3683[2mms[22m[39m
+     [33m[2m✓[22m[39m renders basic component structure [33m 326[2mms[22m[39m
+     [33m[2m✓[22m[39m opens create folder modal [33m 2023[2mms[22m[39m
+     [33m[2m✓[22m[39m opens document modal for item [33m 942[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m      Tests [22m [1m[32m57 passed[39m[22m[90m (57)[39m
+[2m   Start at [22m 02:15:10
+[2m   Duration [22m 6.95s[2m (transform 2.29s, setup 5.44s, import 4.35s, tests 11.50s, environment 20.31s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   36.04 |    37.77 |   30.24 |   37.08 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 15-30             
+ src/components    |       0 |        0 |       0 |       0 |                   
+  mode-toggle.tsx  |       0 |        0 |       0 |       0 | 6-12              
+  ...-provider.tsx |       0 |        0 |       0 |       0 | 16-72             
+ ...ponents/layout |   89.47 |       75 |   77.77 |   88.88 |                   
+  Header.tsx       |     100 |       50 |     100 |     100 | 14                
+  Sidebar.tsx      |   86.66 |    83.33 |   71.42 |   86.66 | 57,95             
+ src/components/ui |   93.75 |    65.21 |    90.9 |   93.33 |                   
+  button.tsx       |     100 |      100 |     100 |     100 |                   
+  ...irm-modal.tsx |   86.66 |       60 |   83.33 |   84.61 | 38-39             
+  input.tsx        |     100 |      100 |     100 |     100 |                   
+  label.tsx        |     100 |      100 |     100 |     100 |                   
+  select.tsx       |     100 |      100 |     100 |     100 |                   
+  textarea.tsx     |     100 |      100 |     100 |     100 |                   
+ src/contexts      |       0 |        0 |       0 |       0 |                   
+  ...gsContext.tsx |       0 |        0 |       0 |       0 | 17-122            
+  ...ceContext.tsx |       0 |        0 |       0 |       0 | 18-85             
+ src/features/auth |   69.38 |       75 |   61.53 |   70.83 |                   
+  LoginFeature.tsx |     100 |      100 |     100 |     100 |                   
+  ...erFeature.tsx |     100 |      100 |     100 |     100 |                   
+  useAuth.ts       |       0 |        0 |       0 |       0 | 6-26              
+ ...ures/dashboard |   53.16 |    38.18 |      44 |   52.23 |                   
+  ...rdFeature.tsx |   53.16 |    38.18 |      44 |   52.23 | ...57-258,278-328 
+ ...ures/documents |   38.19 |    55.05 |   26.16 |   41.17 |                   
+  ...utFeature.tsx |       0 |        0 |       0 |       0 | 7-25              
+  ...stFeature.tsx |   38.73 |    55.61 |   26.92 |   41.83 | ...73,680,728-960 
+ .../documents/api |   68.14 |    47.95 |   85.71 |   68.93 |                   
+  ...teDocument.ts |       0 |        0 |       0 |       0 | 3-33              
+  drive.ts         |   92.59 |    66.66 |     100 |   92.59 | 52,56             
+  folders.ts       |   80.72 |    63.63 |     100 |    82.5 | ...84,214,225,233 
+  getDocument.ts   |       0 |        0 |       0 |       0 | 4-15              
+  getDocuments.ts  |       0 |        0 |       0 |       0 | 18-43             
+ ...nts/components |   19.67 |    21.53 |   12.96 |    20.3 |                   
+  ...lderModal.tsx |       0 |        0 |       0 |       0 | 16-93             
+  ...lderModal.tsx |       0 |        0 |       0 |       0 | 15-87             
+  ...mentModal.tsx |    78.7 |    74.48 |   51.85 |    80.8 | ...41,307,358-415 
+  ...riveModal.tsx |       0 |        0 |       0 |       0 | 20-283            
+  ...mentModal.tsx |       0 |        0 |       0 |       0 | 17-108            
+  ...lderModal.tsx |       0 |        0 |       0 |       0 | 17-112            
+  ...ipleModal.tsx |       0 |        0 |       0 |       0 | 20-138            
+  ...lderModal.tsx |       0 |        0 |       0 |       0 | 16-100            
+ ...ocuments/hooks |       0 |        0 |       0 |       0 |                   
+  useDocument.ts   |       0 |      100 |       0 |       0 | 4-7               
+  useDocuments.ts  |       0 |        0 |       0 |       0 | 4-7               
+  useFolders.ts    |       0 |        0 |       0 |       0 | 4-65              
+ ...tures/settings |       0 |        0 |       0 |       0 |                   
+  ...gsFeature.tsx |       0 |        0 |       0 |       0 | 7-111             
+ src/lib           |     100 |      100 |     100 |     100 |                   
+  supabase.ts      |     100 |      100 |     100 |     100 |                   
+  utils.ts         |     100 |      100 |     100 |     100 |                   
+ src/pages         |   51.87 |    68.18 |   42.85 |   53.44 |                   
+  Dashboard.tsx    |     100 |      100 |     100 |     100 |                   
+  ...ardLayout.tsx |       0 |      100 |       0 |       0 | 4                 
+  DocumentList.tsx |     100 |      100 |     100 |     100 |                   
+  Login.tsx        |     100 |      100 |     100 |     100 |                   
+  Register.tsx     |     100 |      100 |     100 |     100 |                   
+  Trash.tsx        |   50.78 |    68.18 |   39.65 |   52.25 | ...55,377,393-439 
+-------------------|---------|----------|---------|---------|-------------------

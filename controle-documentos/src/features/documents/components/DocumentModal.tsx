@@ -29,7 +29,7 @@ function FolderSelector({
     folderId, setFolderId, allFolders, filteredFolders,
     isFetchingFolders, folderSearch, setFolderSearch,
     isFolderDropdownOpen, setIsFolderDropdownOpen
-}: FolderSelectorProps) {
+}: Readonly<FolderSelectorProps>) {
     if (isFetchingFolders) {
         return <div className="h-11 bg-gray-200 dark:bg-slate-700 animate-pulse rounded-md" />;
     }
@@ -249,6 +249,13 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
         setLoading(false);
     };
 
+    let submitButtonText = 'Gerar e Salvar';
+    if (loading) {
+        submitButtonText = 'Salvando...';
+    } else if (documentId) {
+        submitButtonText = 'Atualizar Metadados';
+    }
+
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-200">
             <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={onClose} aria-label="Fechar modal" />
@@ -450,7 +457,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                         className="w-full sm:w-auto"
                         disabled={loading || isFetchingDoc}
                     >
-                        {loading ? 'Salvando...' : (documentId ? 'Atualizar Metadados' : 'Gerar e Salvar')}
+                        {submitButtonText}
                     </Button>
                 </div>
             </div>

@@ -77,22 +77,27 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
                     </p>
 
                     <div className="mb-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <label className="flex items-start gap-3 cursor-pointer group">
+                        <div className="flex items-start gap-3 group">
                             <input
+                                id="delete-contents-checkbox"
                                 type="checkbox"
-                                className="w-4 h-4 mt-0.5 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                aria-label="Excluir também os arquivos contidos na pasta"
+                                className="w-4 h-4 mt-1 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
                                 checked={deleteDocuments}
                                 onChange={(e) => setDeleteDocuments(e.target.checked)}
                             />
-                            <span className="flex flex-col">
+                            <label
+                                htmlFor="delete-contents-checkbox"
+                                className="flex flex-col cursor-pointer"
+                            >
                                 <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     Excluir também os arquivos contidos nela?
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Se desmarcado, os arquivos voltarão para a pasta inicial. Subpastas serão excluídas de qualquer forma.
                                 </span>
-                            </span>
-                        </label>
+                            </label>
+                        </div>
                     </div>
 
                     {error && <p className="mb-4 text-sm text-red-500">{error}</p>}

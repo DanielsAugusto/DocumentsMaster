@@ -189,34 +189,42 @@ export default function DashboardFeature() {
 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 col-span-1 lg:col-span-2">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Distribuição</p>
-                    {isLoading ? (
-                        <div className="flex gap-2 h-8 w-full animate-pulse mt-2">
-                            <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800 rounded-l-full"></div>
-                            <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800"></div>
-                            <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800 rounded-r-full"></div>
-                        </div>
-                    ) : (metrics.total <= 0 ? (
-                        <div className="text-sm text-gray-400 dark:text-gray-500 mt-2">Nenhum documento para classificar.</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {/* Simple Horizontal Bar */}
-                            <div className="h-4 w-full flex rounded-full overflow-hidden shadow-inner">
-                                {Boolean(metrics.types.pdf) && <div style={{ width: `${(metrics.types.pdf / metrics.total) * 100}%` }} className="bg-red-500" title="PDF"></div>}
-                                {Boolean(metrics.types.word) && <div style={{ width: `${(metrics.types.word / metrics.total) * 100}%` }} className="bg-blue-500" title="Word"></div>}
-                                {Boolean(metrics.types.excel) && <div style={{ width: `${(metrics.types.excel / metrics.total) * 100}%` }} className="bg-emerald-500" title="Excel"></div>}
-                                {Boolean(metrics.types.image) && <div style={{ width: `${(metrics.types.image / metrics.total) * 100}%` }} className="bg-purple-500" title="Imagens"></div>}
-                                {Boolean(metrics.types.other) && <div style={{ width: `${(metrics.types.other / metrics.total) * 100}%` }} className="bg-gray-400" title="Outros"></div>}
+                    {(() => {
+                        if (isLoading) {
+                            return (
+                                <div className="flex gap-2 h-8 w-full animate-pulse mt-2">
+                                    <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800 rounded-l-full"></div>
+                                    <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800"></div>
+                                    <div className="h-full flex-1 bg-gray-200 dark:bg-gray-800 rounded-r-full"></div>
+                                </div>
+                            );
+                        }
+
+                        if (metrics.total <= 0) {
+                            return <div className="text-sm text-gray-400 dark:text-gray-500 mt-2">Nenhum documento para classificar.</div>;
+                        }
+
+                        return (
+                            <div className="space-y-4">
+                                {/* Simple Horizontal Bar */}
+                                <div className="h-4 w-full flex rounded-full overflow-hidden shadow-inner">
+                                    {Boolean(metrics.types.pdf) && <div style={{ width: `${(metrics.types.pdf / metrics.total) * 100}%` }} className="bg-red-500" title="PDF"></div>}
+                                    {Boolean(metrics.types.word) && <div style={{ width: `${(metrics.types.word / metrics.total) * 100}%` }} className="bg-blue-500" title="Word"></div>}
+                                    {Boolean(metrics.types.excel) && <div style={{ width: `${(metrics.types.excel / metrics.total) * 100}%` }} className="bg-emerald-500" title="Excel"></div>}
+                                    {Boolean(metrics.types.image) && <div style={{ width: `${(metrics.types.image / metrics.total) * 100}%` }} className="bg-purple-500" title="Imagens"></div>}
+                                    {Boolean(metrics.types.other) && <div style={{ width: `${(metrics.types.other / metrics.total) * 100}%` }} className="bg-gray-400" title="Outros"></div>}
+                                </div>
+                                {/* Legend */}
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    {Boolean(metrics.types.pdf) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span> PDF ({metrics.types.pdf})</div>}
+                                    {Boolean(metrics.types.word) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span> Word ({metrics.types.word})</div>}
+                                    {Boolean(metrics.types.excel) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span> Excel ({metrics.types.excel})</div>}
+                                    {Boolean(metrics.types.image) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-purple-500 mr-2"></span> Imagens ({metrics.types.image})</div>}
+                                    {Boolean(metrics.types.other) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-gray-400 mr-2"></span> Outros ({metrics.types.other})</div>}
+                                </div>
                             </div>
-                            {/* Legend */}
-                            <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                                {Boolean(metrics.types.pdf) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span> PDF ({metrics.types.pdf})</div>}
-                                {Boolean(metrics.types.word) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span> Word ({metrics.types.word})</div>}
-                                {Boolean(metrics.types.excel) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span> Excel ({metrics.types.excel})</div>}
-                                {Boolean(metrics.types.image) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-purple-500 mr-2"></span> Imagens ({metrics.types.image})</div>}
-                                {Boolean(metrics.types.other) && <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-gray-400 mr-2"></span> Outros ({metrics.types.other})</div>}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -244,20 +252,26 @@ export default function DashboardFeature() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {isLoading ? (
-                                    Array.from({ length: 3 }).map((_, i) => (
-                                        <tr key={`skeleton-${String(i)}`} className="animate-pulse">
-                                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
-                                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div></td>
-                                            <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
-                                        </tr>
-                                    ))
-                                ) : ((recentDocuments.length === 0) ? (
-                                    <tr>
-                                        <td colSpan={3} className="px-6 py-12 text-center text-gray-500">Nenhum documento recente.</td>
-                                    </tr>
-                                ) : (
-                                    recentDocuments.map((doc) => (
+                                {(() => {
+                                    if (isLoading) {
+                                        return Array.from({ length: 3 }).map((_, i) => (
+                                            <tr key={`skeleton-${String(i)}`} className="animate-pulse">
+                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
+                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div></td>
+                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
+                                            </tr>
+                                        ));
+                                    }
+
+                                    if (recentDocuments.length === 0) {
+                                        return (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-12 text-center text-gray-500">Nenhum documento recente.</td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return recentDocuments.map((doc) => (
                                         <tr
                                             key={doc.id}
                                             onClick={() =>
@@ -293,8 +307,8 @@ export default function DashboardFeature() {
                                                 {new Date(doc.created_at).toLocaleDateString()}
                                             </td>
                                         </tr>
-                                    ))
-                                ))}
+                                    ));
+                                })()}
                             </tbody>
                         </table>
                     </div>
