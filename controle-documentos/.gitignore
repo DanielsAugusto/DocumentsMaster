@@ -24,3 +24,6 @@ yarn-error.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Google Service Account keys
+documentsmaster-*.json

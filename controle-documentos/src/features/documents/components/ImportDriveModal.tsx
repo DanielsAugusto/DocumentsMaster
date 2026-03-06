@@ -187,13 +187,13 @@ export function ImportDriveModal({ isOpen, onClose, currentFolderId }: ImportDri
                         </button>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Cole o link de uma pasta compartilhada para migrá-la automaticamente. Todos os arquivos e documentos listáveis se transformarão em Documentos no sistema apontando diretamente para o visualizador do Google Drive.
+                        Cole o link de uma pasta do Drive para migrá-la automaticamente. Funciona com pastas públicas e restritas (compartilhadas com a conta de serviço). Todos os arquivos se transformarão em Documentos no sistema.
                     </p>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
                     <div className="space-y-3">
-                        <Label htmlFor="driveLink">Link da Pasta do Drive (Compartilhamento Público)</Label>
+                        <Label htmlFor="driveLink">Link da Pasta do Drive</Label>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                                 id="driveLink"
