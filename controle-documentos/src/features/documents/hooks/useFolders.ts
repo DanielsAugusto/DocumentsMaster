@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFolders, getAllFolders, createFolder, deleteFolder, moveDocument, updateFolder } from '../api/folders';
+import { getFolders, getAllFolders, createFolder, deleteFolder, moveDocument, moveFolder, updateFolder } from '../api/folders';
 
 export const useFolders = (parentId: string | null = null) => {
     return useQuery({
@@ -51,6 +51,16 @@ export const useUpdateFolder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ id, name }: { id: string, name: string }) => updateFolder(id, name),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+        },
+    });
+};
+
+export const useMoveFolder = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ folderId, targetParentId }: { folderId: string, targetParentId: string | null }) => moveFolder(folderId, targetParentId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['folders'] });
         },

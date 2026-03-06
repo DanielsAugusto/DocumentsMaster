@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/useAuth';
 interface UserSettings {
     primary_color: string;
     font_scale: number;
+    trash_retention_days: number;
 }
 
 interface SettingsContextType {
@@ -16,6 +17,7 @@ interface SettingsContextType {
 const defaultSettings: UserSettings = {
     primary_color: '#2563eb', // Tailwind blue-600
     font_scale: 1.0,
+    trash_retention_days: 30,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -53,7 +55,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             try {
                 const { data, error } = await supabase
                     .from('user_settings')
-                    .select('primary_color, font_scale')
+                    .select('primary_color, font_scale, trash_retention_days')
                     .eq('user_id', user.id)
                     .maybeSingle();
 
@@ -63,6 +65,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     setSettings({
                         primary_color: data.primary_color || defaultSettings.primary_color,
                         font_scale: data.font_scale || defaultSettings.font_scale,
+                        trash_retention_days: data.trash_retention_days ?? defaultSettings.trash_retention_days,
                     });
                 }
             } catch (error) {
@@ -89,6 +92,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     user_id: user.id,
                     primary_color: updated.primary_color,
                     font_scale: updated.font_scale,
+                    trash_retention_days: updated.trash_retention_days,
                 }, { onConflict: 'user_id' }); // Requires valid constraints if onConflict used instead of update/insert logic
 
             if (error) throw error;

@@ -12,6 +12,7 @@ interface ConfirmModalProps {
     onConfirm: () => void;
     onCancel: () => void;
     isDestructive?: boolean;
+    isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -23,6 +24,7 @@ export function ConfirmModal({
     onConfirm,
     onCancel,
     isDestructive = false,
+    isLoading = false,
 }: ConfirmModalProps) {
     const [mounted, setMounted] = useState(false);
 
@@ -72,22 +74,27 @@ export function ConfirmModal({
                         <Button
                             variant="outline"
                             onClick={onCancel}
+                            disabled={isLoading}
                             className="w-full sm:w-auto hover:bg-gray-100 dark:hover:bg-slate-800"
                         >
                             {cancelText}
                         </Button>
                         <Button
                             variant={isDestructive ? 'destructive' : 'default'}
+                            disabled={isLoading}
                             onClick={() => {
                                 onConfirm();
-                                onCancel(); // Auto-close upon confirm click
+                                if (!isLoading) {
+                                    // Wait for parent component to close modal when mutation is finished instead of auto closing immediately.
+                                    // Actually, the parent component already manages isOpen via state. We don't strictly need to close here if loading.
+                                }
                             }}
                             className={`w-full sm:w-auto ${isDestructive
                                 ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700'
                                 : ''
                                 }`}
                         >
-                            {confirmText}
+                            {isLoading ? 'Aguarde...' : confirmText}
                         </Button>
                     </div>
                 </div>

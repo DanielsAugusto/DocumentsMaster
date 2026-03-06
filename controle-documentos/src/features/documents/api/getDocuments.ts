@@ -19,6 +19,7 @@ export const getDocuments = async (folderId: string | null | 'all' = null): Prom
     let query = supabase
         .from('documents')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
     if (folderId !== 'all') {

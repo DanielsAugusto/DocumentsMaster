@@ -74,15 +74,7 @@ export default function LoginFeature() {
                     </Button>
                 </form>
 
-                <div className="text-center text-sm mt-6">
-                    <span className="text-gray-500 dark:text-gray-400">Não tem uma conta? </span>
-                    <Link
-                        to="/register"
-                        className="font-medium text-blue-600 dark:text-blue-500 hover:text-blue-500 dark:hover:text-blue-400 underline underline-offset-4"
-                    >
-                        Cadastre-se
-                    </Link>
-                </div>
+
             </div>
         </div>
     );

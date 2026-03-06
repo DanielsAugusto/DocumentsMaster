@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Home, FileText, LogOut, Layout, Settings, X } from 'lucide-react';
+import { Home, FileText, LogOut, Layout, Settings, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 export const navItems = [
     { name: 'Início', path: '/', icon: Home },
     { name: 'Documentos', path: '/documentos', icon: FileText },
+    { name: 'Lixeira', path: '/lixeira', icon: Trash2 },
     { name: 'Configurações', path: '/settings', icon: Settings },
 ];
 

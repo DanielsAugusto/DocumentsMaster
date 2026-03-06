@@ -14,6 +14,8 @@ import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { CreateFolderModal } from './components/CreateFolderModal';
 import { DeleteFolderModal } from './components/DeleteFolderModal';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
+import { MoveFolderModal } from './components/MoveFolderModal';
+import { MoveMultipleModal } from './components/MoveMultipleModal';
 import { DocumentModal } from './components/DocumentModal';
 import { RenameFolderModal } from './components/RenameFolderModal';
 
@@ -36,11 +38,19 @@ export default function DocumentListFeature() {
     const [isRenameFolderOpen, setIsRenameFolderOpen] = useState(false);
     const [folderToRename, setFolderToRename] = useState<FolderType | null>(null);
     const [folderToDelete, setFolderToDelete] = useState<FolderType | null>(null);
+    const [folderToMove, setFolderToMove] = useState<FolderType | null>(null);
     const [documentToMove, setDocumentToMove] = useState<Document | null>(null);
 
     // Modal state for Documents
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [documentToEditId, setDocumentToEditId] = useState<string | null>(null);
+
+    // Multi-selection state
+    type SelectedItem = { id: string, type: 'folder' | 'document', name: string };
+    const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+    const [isMultiDeleteModalOpen, setIsMultiDeleteModalOpen] = useState(false);
+    const [isMultiDeleting, setIsMultiDeleting] = useState(false);
+    const [isMultiMoveModalOpen, setIsMultiMoveModalOpen] = useState(false);
 
     // Effect for opening specific folders/focusing document based on location state (e.g. going from Dashboard)
     useEffect(() => {
@@ -133,10 +143,62 @@ export default function DocumentListFeature() {
     }, []);
 
     const handleDelete = async (id: string) => {
-        // Optimistic UI updates could go here, but for simplicity we invalidate
-        await supabase.from('documents').delete().eq('id', id);
+        // Soft-delete for documents
+        await supabase.from('documents').update({ deleted_at: new Date().toISOString() }).eq('id', id);
         queryClient.invalidateQueries({ queryKey: ['documents'] });
         setDocumentToDelete(null);
+    };
+
+    const handleMultiDelete = async () => {
+        setIsMultiDeleting(true);
+        try {
+            const folderIds = selectedItems.filter(i => i.type === 'folder').map(i => i.id);
+            const docIds = selectedItems.filter(i => i.type === 'document').map(i => i.id);
+
+            const promises: any[] = [];
+
+            // Delete folders using the RPC
+            for (const id of folderIds) {
+                promises.push(supabase.rpc('move_folder_to_trash', { p_folder_id: id }).then(res => res));
+            }
+
+            // Soft-delete documents
+            if (docIds.length > 0) {
+                promises.push(
+                    supabase.from('documents').update({ deleted_at: new Date().toISOString() }).in('id', docIds).then(res => res)
+                );
+            }
+
+            await Promise.all(promises);
+
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+            setSelectedItems([]);
+            setIsMultiDeleteModalOpen(false);
+        } catch (error) {
+            console.error('Erro na exclusão em lote:', error);
+            alert('Um erro ocorreu ao excluir os itens selecionados.');
+        } finally {
+            setIsMultiDeleting(false);
+        }
+    };
+
+    const toggleSelection = (item: SelectedItem, isSelected: boolean) => {
+        if (isSelected) {
+            setSelectedItems(prev => [...prev, item]);
+        } else {
+            setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
+        }
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            const foldersToSelect = visibleFolders.map(f => ({ id: f.id, type: 'folder' as const, name: f.name }));
+            const docsToSelect = filteredDocuments.map(d => ({ id: d.id, type: 'document' as const, name: d.title }));
+            setSelectedItems([...foldersToSelect, ...docsToSelect]);
+        } else {
+            setSelectedItems([]);
+        }
     };
 
     const getEmbedUrl = (url: string) => {
@@ -206,6 +268,14 @@ export default function DocumentListFeature() {
 
         return () => window.clearTimeout(timeout);
     }, [pendingDocumentFocusId, filteredDocuments]);
+
+    const isAllSelected = (visibleFolders.length > 0 || filteredDocuments.length > 0) &&
+        selectedItems.length === visibleFolders.length + filteredDocuments.length;
+
+    useEffect(() => {
+        // Reset selection if changing folder or searching
+        setSelectedItems([]);
+    }, [currentFolderId, searchTerm, selectedType, selectedKeywords]);
 
     // No longer blocking the whole render with a simple text loading.
     // We will render the UI shell and show Skeletons inside the list instead.
@@ -380,6 +450,36 @@ export default function DocumentListFeature() {
                     </div>
                 </div>
 
+                {(!loading && !loadingFolders && (visibleFolders.length > 0 || filteredDocuments.length > 0)) && (
+                    <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={isAllSelected}
+                                onChange={handleSelectAll}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                            />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selecionar Todos</span>
+                        </label>
+
+                        {selectedItems.length > 0 && (
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
+                                <span className="text-sm text-gray-500 dark:text-gray-400 mr-2 hidden sm:inline-block">
+                                    {selectedItems.length} {selectedItems.length === 1 ? 'item selecionado' : 'itens selecionados'}
+                                </span>
+                                <Button size="sm" variant="outline" onClick={() => setIsMultiMoveModalOpen(true)}>
+                                    <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Mover</span>
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => setIsMultiDeleteModalOpen(true)}>
+                                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Excluir</span>
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                     {/* Skeleton Loading State */}
                     {(loading || loadingFolders) && Array.from({ length: 3 }).map((_, idx) => (
@@ -408,6 +508,14 @@ export default function DocumentListFeature() {
                             }}
                         >
                             <div className="flex items-center min-w-0">
+                                <div className="mr-4 flex items-center h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
+                                        onChange={(e) => toggleSelection({ id: folder.id, type: 'folder', name: folder.name }, e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                    />
+                                </div>
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
                                     <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
                                 </div>
@@ -424,7 +532,7 @@ export default function DocumentListFeature() {
                                         setFolderToRename(folder);
                                         setIsRenameFolderOpen(true);
                                     }}
-                                    className="w-52 sm:w-56 2xl:w-auto 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                    className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                     size="sm"
                                     title="Renomear Pasta"
                                 >
@@ -432,9 +540,19 @@ export default function DocumentListFeature() {
                                     <span className="hidden sm:inline">Renomear</span>
                                 </Button>
                                 <Button
+                                    variant="outline"
+                                    onClick={() => setFolderToMove(folder)}
+                                    className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                    title="Mover de pasta"
+                                    size="sm"
+                                >
+                                    <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Mover</span>
+                                </Button>
+                                <Button
                                     variant="ghost"
                                     onClick={() => setFolderToDelete(folder)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3"
+                                    className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-0 sm:px-3 h-8 sm:h-9"
                                     size="sm"
                                     title="Excluir Pasta"
                                 >
@@ -462,6 +580,14 @@ export default function DocumentListFeature() {
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                             >
                                 <div className="flex items-start min-w-0 flex-1">
+                                    <div className="mr-4 mt-2.5 flex items-start h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
+                                            onChange={(e) => toggleSelection({ id: doc.id, type: 'document', name: doc.title }, e.target.checked)}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                        />
+                                    </div>
                                     {(() => {
                                         const type = doc.type?.toUpperCase() || '';
                                         if (type === 'PDF') {
@@ -669,8 +795,8 @@ export default function DocumentListFeature() {
             <ConfirmModal
                 isOpen={!!documentToDelete}
                 title="Excluir Documento"
-                description="Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita."
-                confirmText="Excluir"
+                description="Tem certeza que deseja mover este documento para a lixeira? "
+                confirmText="Mover para lixeira"
                 cancelText="Cancelar"
                 onConfirm={() => {
                     if (documentToDelete) {
@@ -678,6 +804,18 @@ export default function DocumentListFeature() {
                     }
                 }}
                 onCancel={() => setDocumentToDelete(null)}
+                isDestructive
+            />
+
+            {/* Confirm Multi-Delete Modal */}
+            <ConfirmModal
+                isOpen={isMultiDeleteModalOpen}
+                title={`Excluir ${selectedItems.length === 1 ? '1 item' : `${selectedItems.length} itens`}`}
+                description={`Tem certeza que deseja mover ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'} para a lixeira?`}
+                confirmText={isMultiDeleting ? "Excluindo..." : "Mover para lixeira"}
+                cancelText="Cancelar"
+                onConfirm={handleMultiDelete}
+                onCancel={() => setIsMultiDeleteModalOpen(false)}
                 isDestructive
             />
 
@@ -702,6 +840,24 @@ export default function DocumentListFeature() {
                     setFolderToRename(null);
                 }}
                 folder={folderToRename}
+            />
+
+            <MoveFolderModal
+                isOpen={!!folderToMove}
+                onClose={() => setFolderToMove(null)}
+                folderId={folderToMove?.id || null}
+                folderName={folderToMove?.name || ''}
+                currentParentId={folderToMove?.parent_id || null}
+            />
+
+            <MoveMultipleModal
+                isOpen={isMultiMoveModalOpen}
+                items={selectedItems}
+                currentFolderId={currentFolderId}
+                onClose={() => {
+                    setIsMultiMoveModalOpen(false);
+                    setSelectedItems([]); // Clear selection after moving
+                }}
             />
 
             <MoveDocumentModal

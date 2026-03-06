@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import Login from './pages/Login';
-import Register from './pages/Register';
+
 import DashboardLayout from './pages/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import DocumentList from './pages/DocumentList';
+import Trash from './pages/Trash';
 import SettingsFeature from './features/settings/SettingsFeature';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,12 +33,13 @@ function App() {
                     <BrowserRouter>
                         <Routes>
                             <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-                            <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
+
 
                             {/* Rotas Protegidas */}
                             <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
                                 <Route index element={<Dashboard />} />
                                 <Route path="documentos" element={<DocumentList />} />
+                                <Route path="lixeira" element={<Trash />} />
                                 <Route path="settings" element={<SettingsFeature />} />
                             </Route>
                         </Routes>

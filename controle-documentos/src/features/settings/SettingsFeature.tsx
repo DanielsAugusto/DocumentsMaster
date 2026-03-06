@@ -6,18 +6,21 @@ import { Label } from '@/components/ui/label';
 export default function SettingsFeature() {
     const { settings, updateSettings, isLoading } = useSettings();
     const [localScale, setLocalScale] = useState(settings.font_scale);
+    const [localRetentionDays, setLocalRetentionDays] = useState(settings.trash_retention_days);
     const [isSaving, setIsSaving] = useState(false);
 
     // Sync local state when external settings load/change
     useEffect(() => {
         setLocalScale(settings.font_scale);
+        setLocalRetentionDays(settings.trash_retention_days);
     }, [settings]);
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
             await updateSettings({
-                font_scale: parseFloat(localScale.toString())
+                font_scale: parseFloat(localScale.toString()),
+                trash_retention_days: parseInt(localRetentionDays.toString())
             });
         } finally {
             setIsSaving(false);
@@ -28,7 +31,8 @@ export default function SettingsFeature() {
         setIsSaving(true);
         try {
             await updateSettings({
-                font_scale: 1.0
+                font_scale: 1.0,
+                trash_retention_days: 30
             });
         } finally {
             setIsSaving(false);
@@ -43,7 +47,7 @@ export default function SettingsFeature() {
         <div className="w-full bg-white dark:bg-slate-900 shadow-sm rounded-lg border border-gray-100 dark:border-gray-800 transition-colors p-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Aparência e Acessibilidade</h2>
 
-            <div className="space-y-8">
+            <div className="space-y-10">
                 {/* Text Scale Slider */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
@@ -88,6 +92,32 @@ export default function SettingsFeature() {
                             Este é um texto de exemplo para demonstrar como o conteúdo do aplicativo se comportará com a nova escala escolhida. O tamanho se ajusta em tempo real conforme você move o controle deslizante acima, sem alterar os menus laterais e superiores.
                         </p>
                     </div>
+                </div>
+
+                <hr className="border-gray-100 dark:border-gray-800" />
+
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <Label htmlFor="trash-retention" className="text-lg font-medium">
+                            Limpeza Automática da Lixeira
+                        </Label>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Escolha por quantos dias os arquivos e pastas excluídos devem permanecer na lixeira antes de serem excluídos permanentemente do sistema.
+                    </p>
+                    <select
+                        id="trash-retention"
+                        value={localRetentionDays}
+                        onChange={(e) => setLocalRetentionDays(parseInt(e.target.value))}
+                        className="mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:text-white"
+                    >
+                        <option value={7}>7 Dias</option>
+                        <option value={15}>15 Dias</option>
+                        <option value={30}>30 Dias</option>
+                        <option value={60}>60 Dias</option>
+                        <option value={90}>90 Dias</option>
+                        <option value={99999}>Nunca Esvaziar Sozinho</option>
+                    </select>
                 </div>
 
                 <hr className="border-gray-100 dark:border-gray-800" />
