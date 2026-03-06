@@ -10,6 +10,7 @@ import SettingsFeature from './features/settings/SettingsFeature';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SettingsProvider } from '@/contexts/SettingsContext';
+import { WorkspaceProvider } from '@/contexts/WorkspaceContext';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -29,22 +30,24 @@ function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <SettingsProvider>
-                <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-                    <BrowserRouter>
-                        <Routes>
-                            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+                <WorkspaceProvider>
+                    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+                        <BrowserRouter>
+                            <Routes>
+                                <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
 
 
-                            {/* Rotas Protegidas */}
-                            <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
-                                <Route index element={<Dashboard />} />
-                                <Route path="documentos" element={<DocumentList />} />
-                                <Route path="lixeira" element={<Trash />} />
-                                <Route path="settings" element={<SettingsFeature />} />
-                            </Route>
-                        </Routes>
-                    </BrowserRouter>
-                </ThemeProvider>
+                                {/* Rotas Protegidas */}
+                                <Route path="/" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
+                                    <Route index element={<Dashboard />} />
+                                    <Route path="documentos" element={<DocumentList />} />
+                                    <Route path="lixeira" element={<Trash />} />
+                                    <Route path="settings" element={<SettingsFeature />} />
+                                </Route>
+                            </Routes>
+                        </BrowserRouter>
+                    </ThemeProvider>
+                </WorkspaceProvider>
             </SettingsProvider>
         </QueryClientProvider>
     );

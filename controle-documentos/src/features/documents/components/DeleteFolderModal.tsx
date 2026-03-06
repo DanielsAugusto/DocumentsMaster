@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { X, Folder, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { useDeleteFolder } from '../hooks/useFolders';
 
 interface DeleteFolderModalProps {
@@ -28,8 +28,8 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        globalThis.addEventListener('keydown', handleKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     // Reset state when opening
@@ -54,7 +54,7 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-            <div className="fixed inset-0" onClick={onClose} />
+            <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={onClose} aria-label="Fechar modal" />
             <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
                 <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -77,9 +77,10 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
                     </p>
 
                     <div className="mb-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <label className="flex items-start gap-3 cursor-pointer group">
+                        <label htmlFor="deleteDocsCheckbox" className="flex items-start gap-3 cursor-pointer group">
                             <div className="flex items-center h-5 mt-0.5">
                                 <input
+                                    id="deleteDocsCheckbox"
                                     type="checkbox"
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                                     checked={deleteDocuments}

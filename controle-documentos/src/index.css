@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* NOSONAR - Valid Tailwind CSS v4 syntax */
 @custom-variant dark (&:is(.dark *));
 @custom-variant hover (&:hover);
 

@@ -12,9 +12,12 @@ export default function DashboardLayoutFeature() {
 
             {/* Background overlay for mobile */}
             {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity"
+                <button
+                    type="button"
+                    className="fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity border-none cursor-default"
+                    tabIndex={-1}
                     onClick={() => setIsSidebarOpen(false)}
+                    aria-label="Fechar menu lateral"
                 />
             )}
 

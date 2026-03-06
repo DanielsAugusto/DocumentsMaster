@@ -17,7 +17,7 @@ interface SidebarProps {
     setIsOpen?: (open: boolean) => void;
 }
 
-export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
+export function Sidebar({ isOpen, setIsOpen }: Readonly<SidebarProps>) {
     const location = useLocation();
     const navigate = useNavigate();
     const [isLogoutOpen, setIsLogoutOpen] = useState(false);

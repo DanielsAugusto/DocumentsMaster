@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, FolderPlus } from 'lucide-react';
 import { useCreateFolder } from '../hooks/useFolders';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 interface CreateFolderModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ export function CreateFolderModal({ isOpen, onClose, parentId }: CreateFolderMod
     const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const createFolder = useCreateFolder();
+    const { currentWorkspace } = useWorkspace();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -28,8 +30,8 @@ export function CreateFolderModal({ isOpen, onClose, parentId }: CreateFolderMod
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        globalThis.addEventListener('keydown', handleKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     if (!isOpen || !mounted) return null;
@@ -44,7 +46,12 @@ export function CreateFolderModal({ isOpen, onClose, parentId }: CreateFolderMod
         }
 
         try {
-            await createFolder.mutateAsync({ name: name.trim(), parent_id: parentId });
+            if (!currentWorkspace?.organization_id) throw new Error("Organização não carregada");
+            await createFolder.mutateAsync({
+                name: name.trim(),
+                parent_id: parentId,
+                organization_id: currentWorkspace.organization_id
+            });
             setName('');
             onClose();
         } catch (err: any) {
@@ -54,7 +61,7 @@ export function CreateFolderModal({ isOpen, onClose, parentId }: CreateFolderMod
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-            <div className="fixed inset-0" onClick={onClose} />
+            <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={onClose} aria-label="Fechar modal" />
             <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="flex justify-between items-start mb-4">

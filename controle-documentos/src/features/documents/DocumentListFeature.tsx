@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft } from 'lucide-react';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, Eye, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload } from 'lucide-react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,18 +16,21 @@ import { DeleteFolderModal } from './components/DeleteFolderModal';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { MoveFolderModal } from './components/MoveFolderModal';
 import { MoveMultipleModal } from './components/MoveMultipleModal';
+import { ImportDriveModal } from './components/ImportDriveModal';
 import { DocumentModal } from './components/DocumentModal';
 import { RenameFolderModal } from './components/RenameFolderModal';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 export default function DocumentListFeature() {
+    const { currentWorkspace } = useWorkspace();
     const location = useLocation();
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [folderPath, setFolderPath] = useState<FolderType[]>([]);
 
-    const { data: allFoldersData = [] } = useAllFolders();
-    const { data: folders = [], isLoading: loadingFolders } = useFolders(currentFolderId);
-    const { data: documents = [], isLoading: loading } = useDocuments(currentFolderId);
-    const { data: allDocuments = [] } = useDocuments('all');
+    const { data: allFoldersData = [] } = useAllFolders(currentWorkspace?.organization_id);
+    const { data: folders = [], isLoading: loadingFolders } = useFolders(currentFolderId, currentWorkspace?.organization_id);
+    const { data: documents = [], isLoading: loading } = useDocuments(currentFolderId, currentWorkspace?.organization_id);
+    const { data: allDocuments = [] } = useDocuments('all', currentWorkspace?.organization_id);
     const queryClient = useQueryClient();
 
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
@@ -44,6 +47,7 @@ export default function DocumentListFeature() {
     // Modal state for Documents
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [documentToEditId, setDocumentToEditId] = useState<string | null>(null);
+    const [isImportDriveModalOpen, setIsImportDriveModalOpen] = useState(false);
 
     // Multi-selection state
     type SelectedItem = { id: string, type: 'folder' | 'document', name: string };
@@ -155,28 +159,28 @@ export default function DocumentListFeature() {
             const folderIds = selectedItems.filter(i => i.type === 'folder').map(i => i.id);
             const docIds = selectedItems.filter(i => i.type === 'document').map(i => i.id);
 
-            const promises: any[] = [];
-
-            // Delete folders using the RPC
+            // Delete folders using the RPC SEQUENTIALLY to avoid tree-locking issues
             for (const id of folderIds) {
-                promises.push(supabase.rpc('move_folder_to_trash', { p_folder_id: id }).then(res => res));
+                const { error } = await supabase.rpc('delete_folder', { target_folder_id: id, delete_documents: true });
+                if (error) { /* folder delete failed silently */ }
             }
 
-            // Soft-delete documents
+            // Soft-delete documents in a single bulk push
             if (docIds.length > 0) {
-                promises.push(
-                    supabase.from('documents').update({ deleted_at: new Date().toISOString() }).in('id', docIds).then(res => res)
-                );
+                const { error } = await supabase
+                    .from('documents')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .in('id', docIds);
+
+                if (error) { /* documents delete failed silently */ }
             }
 
-            await Promise.all(promises);
-
-            queryClient.invalidateQueries({ queryKey: ['folders'] });
-            queryClient.invalidateQueries({ queryKey: ['documents'] });
+            await queryClient.invalidateQueries({ queryKey: ['folders'] });
+            await queryClient.invalidateQueries({ queryKey: ['documents'] });
             setSelectedItems([]);
             setIsMultiDeleteModalOpen(false);
         } catch (error) {
-            console.error('Erro na exclusão em lote:', error);
+            // Error handled by UI alert below
             alert('Um erro ocorreu ao excluir os itens selecionados.');
         } finally {
             setIsMultiDeleting(false);
@@ -335,6 +339,17 @@ export default function DocumentListFeature() {
                         <FolderPlus className="h-4 w-4 mr-2" />
                         Nova Pasta
                     </Button>
+                    {currentWorkspace?.role === 'admin' && (
+                        <Button
+                            onClick={() => setIsImportDriveModalOpen(true)}
+                            variant="outline"
+                            className="w-full 2xl:w-auto text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-800/60"
+                            title="Importar arquivos de uma pasta pública do Google Drive"
+                        >
+                            <CloudDownload className="h-4 w-4 mr-2" />
+                            Importar do Drive
+                        </Button>
+                    )}
                     <Button
                         onClick={() => {
                             setDocumentToEditId(null);
@@ -824,6 +839,12 @@ export default function DocumentListFeature() {
                 isOpen={isCreateFolderOpen}
                 onClose={() => setIsCreateFolderOpen(false)}
                 parentId={currentFolderId}
+            />
+
+            <ImportDriveModal
+                isOpen={isImportDriveModalOpen}
+                onClose={() => setIsImportDriveModalOpen(false)}
+                currentFolderId={currentFolderId}
             />
 
             <DeleteFolderModal

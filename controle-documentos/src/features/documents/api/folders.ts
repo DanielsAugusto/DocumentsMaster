@@ -9,12 +9,16 @@ export type Folder = {
     updated_at: string;
 };
 
-export const getFolders = async (parentId: string | null = null): Promise<Folder[]> => {
+export const getFolders = async (parentId: string | null = null, organizationId?: string): Promise<Folder[]> => {
     let query = supabase
         .from('folders')
         .select('*')
         .is('deleted_at', null)
         .order('name', { ascending: true });
+
+    if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+    }
 
     if (parentId) {
         query = query.eq('parent_id', parentId);
@@ -31,12 +35,18 @@ export const getFolders = async (parentId: string | null = null): Promise<Folder
     return data || [];
 };
 
-export const getAllFolders = async (): Promise<Folder[]> => {
-    const { data, error } = await supabase
+export const getAllFolders = async (organizationId?: string): Promise<Folder[]> => {
+    let query = supabase
         .from('folders')
         .select('*')
         .is('deleted_at', null)
         .order('name', { ascending: true });
+
+    if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         throw new Error(error.message);
@@ -45,7 +55,7 @@ export const getAllFolders = async (): Promise<Folder[]> => {
     return data || [];
 };
 
-export const createFolder = async (folderData: { name: string; parent_id?: string | null }): Promise<Folder> => {
+export const createFolder = async (folderData: { name: string; parent_id?: string | null; organization_id: string }): Promise<Folder> => {
     // Pegar o usuario logado
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData?.user) {
@@ -57,6 +67,7 @@ export const createFolder = async (folderData: { name: string; parent_id?: strin
         .insert([{
             name: folderData.name,
             parent_id: folderData.parent_id || null,
+            organization_id: folderData.organization_id,
             user_id: userData.user.id
         }])
         .select()
@@ -92,13 +103,17 @@ export const deleteFolder = async (folderId: string, deleteDocuments: boolean): 
     }
 };
 
-export const updateFolder = async (id: string, name: string): Promise<Folder> => {
-    const { data, error } = await supabase
+export const updateFolder = async (id: string, name: string, organizationId?: string): Promise<Folder> => {
+    let query = supabase
         .from('folders')
         .update({ name })
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+    if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+    }
+
+    const { data, error } = await query.select().single();
 
     if (error) {
         throw new Error(error.message);
@@ -107,11 +122,17 @@ export const updateFolder = async (id: string, name: string): Promise<Folder> =>
     return data;
 };
 
-export const moveDocument = async (documentId: string, folderId: string | null): Promise<void> => {
-    const { error } = await supabase
+export const moveDocument = async (documentId: string, folderId: string | null, organizationId?: string): Promise<void> => {
+    let query = supabase
         .from('documents')
         .update({ folder_id: folderId })
         .eq('id', documentId);
+
+    if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+    }
+
+    const { error } = await query;
 
     if (error) {
         throw new Error(error.message);
@@ -145,23 +166,28 @@ export type TrashItem = {
     parent_id: string | null;
 };
 
-export const getTrashItems = async (): Promise<TrashItem[]> => {
-    // Busca pastas deletadas
-    const { data: trashFolders, error: foldersError } = await supabase
+export const getTrashItems = async (organizationId?: string): Promise<TrashItem[]> => {
+    let foldersQuery = supabase
         .from('folders')
         .select('id, name, parent_id, deleted_at')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
-    if (foldersError) throw new Error(foldersError.message);
-
-    // Busca documentos deletados
-    const { data: trashDocs, error: docsError } = await supabase
+    let docsQuery = supabase
         .from('documents')
         .select('id, title, folder_id, deleted_at')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
+    if (organizationId) {
+        foldersQuery = foldersQuery.eq('organization_id', organizationId);
+        docsQuery = docsQuery.eq('organization_id', organizationId);
+    }
+
+    const { data: trashFolders, error: foldersError } = await foldersQuery;
+    if (foldersError) throw new Error(foldersError.message);
+
+    const { data: trashDocs, error: docsError } = await docsQuery;
     if (docsError) throw new Error(docsError.message);
 
     const items: TrashItem[] = [
@@ -175,7 +201,6 @@ export const getTrashItems = async (): Promise<TrashItem[]> => {
         })) || [])
     ];
 
-    // Ordena pelo deleted_at decrescente
     return items.sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime());
 };
 

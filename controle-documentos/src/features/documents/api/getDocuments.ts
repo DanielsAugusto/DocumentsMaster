@@ -15,12 +15,16 @@ export type Document = {
     folder_id?: string | null;
 };
 
-export const getDocuments = async (folderId: string | null | 'all' = null): Promise<Document[]> => {
+export const getDocuments = async (folderId: string | null = null, organizationId?: string): Promise<Document[]> => {
     let query = supabase
         .from('documents')
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
+
+    if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+    }
 
     if (folderId !== 'all') {
         if (folderId) {

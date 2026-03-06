@@ -39,8 +39,8 @@ export function MoveFolderModal({ isOpen, onClose, folderId, folderName, current
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        globalThis.addEventListener('keydown', handleKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     if (!isOpen || !mounted || !folderId) return null;
@@ -70,7 +70,7 @@ export function MoveFolderModal({ isOpen, onClose, folderId, folderName, current
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-            <div className="fixed inset-0" onClick={onClose} />
+            <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={onClose} aria-label="Fechar modal" />
             <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="flex justify-between items-start mb-4">

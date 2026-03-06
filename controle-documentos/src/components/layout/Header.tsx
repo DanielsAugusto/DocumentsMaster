@@ -7,7 +7,7 @@ interface HeaderProps {
     onMenuClick?: () => void;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick }: Readonly<HeaderProps>) {
     const location = useLocation();
 
     // Find current page name or default to Dashboard

@@ -1,17 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFolders, getAllFolders, createFolder, deleteFolder, moveDocument, moveFolder, updateFolder } from '../api/folders';
 
-export const useFolders = (parentId: string | null = null) => {
+export const useFolders = (parentId: string | null = null, organizationId?: string) => {
     return useQuery({
-        queryKey: ['folders', parentId],
-        queryFn: () => getFolders(parentId),
+        queryKey: ['folders', parentId, organizationId],
+        queryFn: () => getFolders(parentId, organizationId),
     });
 };
 
-export const useAllFolders = () => {
+export const useAllFolders = (organizationId?: string) => {
     return useQuery({
-        queryKey: ['folders', 'all'],
-        queryFn: getAllFolders,
+        queryKey: ['folders', 'all', organizationId],
+        queryFn: () => getAllFolders(organizationId),
     });
 };
 

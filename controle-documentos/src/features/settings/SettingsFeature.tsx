@@ -19,8 +19,8 @@ export default function SettingsFeature() {
         setIsSaving(true);
         try {
             await updateSettings({
-                font_scale: parseFloat(localScale.toString()),
-                trash_retention_days: parseInt(localRetentionDays.toString())
+                font_scale: Number.parseFloat(localScale.toString()),
+                trash_retention_days: Number.parseInt(localRetentionDays.toString())
             });
         } finally {
             setIsSaving(false);
@@ -31,7 +31,7 @@ export default function SettingsFeature() {
         setIsSaving(true);
         try {
             await updateSettings({
-                font_scale: 1.0,
+                font_scale: 1,
                 trash_retention_days: 30
             });
         } finally {
@@ -65,7 +65,7 @@ export default function SettingsFeature() {
                         max="1.5"
                         step="0.05"
                         value={localScale}
-                        onChange={(e) => setLocalScale(parseFloat(e.target.value))}
+                        onChange={(e) => setLocalScale(Number.parseFloat(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <div className="flex justify-between text-xs text-gray-400">
@@ -108,7 +108,7 @@ export default function SettingsFeature() {
                     <select
                         id="trash-retention"
                         value={localRetentionDays}
-                        onChange={(e) => setLocalRetentionDays(parseInt(e.target.value))}
+                        onChange={(e) => setLocalRetentionDays(Number.parseInt(e.target.value))}
                         className="mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:text-white"
                     >
                         <option value={7}>7 Dias</option>

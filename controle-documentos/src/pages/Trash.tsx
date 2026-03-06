@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, RefreshCw, Folder, File, AlertCircle, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 export default function Trash() {
     const queryClient = useQueryClient();
+    const { currentWorkspace } = useWorkspace();
     const [isConfirmEmptyOpen, setIsConfirmEmptyOpen] = useState(false);
     const [itemToConfirmDelete, setItemToConfirmDelete] = useState<TrashItem | null>(null);
     const [itemToConfirmRestore, setItemToConfirmRestore] = useState<TrashItem | null>(null);
@@ -25,8 +27,8 @@ export default function Trash() {
     const [trashFolderPath, setTrashFolderPath] = useState<{ id: string, name: string }[]>([]);
 
     const { data: items, isLoading, error } = useQuery({
-        queryKey: ['trash'],
-        queryFn: getTrashItems
+        queryKey: ['trash', currentWorkspace?.organization_id],
+        queryFn: () => getTrashItems(currentWorkspace?.organization_id)
     });
 
     const restoreMutation = useMutation({
@@ -70,17 +72,17 @@ export default function Trash() {
         });
     }, [items, currentTrashFolderId]);
 
-    const isAllSelected = visibleItems.length > 0 && selectedItems.length === visibleItems.length;
+    const isAllSelected = visibleItems.length > 0 && selectedItems.length === visibleItems.length; // eslint-disable-line @typescript-eslint/no-unused-vars
 
-    const toggleSelection = (item: TrashItem, isSelected: boolean) => {
-        if (isSelected) {
+    const toggleSelection = (item: TrashItem, checked: boolean) => {
+        if (checked) {
             setSelectedItems(prev => [...prev, item]);
         } else {
             setSelectedItems(prev => prev.filter(i => i.id !== item.id || i.type !== item.type));
         }
     };
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => { // eslint-disable-line @typescript-eslint/no-unused-vars
         if (e.target.checked) {
             setSelectedItems([...visibleItems]);
         } else {
@@ -97,8 +99,7 @@ export default function Trash() {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
             setSelectedItems([]);
             setIsMultiRestoreModalOpen(false);
-        } catch (error) {
-            console.error(error);
+        } catch {
             alert('Erro ao restaurar itens selecionados.');
         } finally {
             setIsMultiRestoring(false);
@@ -112,8 +113,7 @@ export default function Trash() {
             queryClient.invalidateQueries({ queryKey: ['trash'] });
             setSelectedItems([]);
             setIsMultiDeleteModalOpen(false);
-        } catch (error) {
-            console.error(error);
+        } catch {
             alert('Erro ao excluir itens definitivamente.');
         } finally {
             setIsMultiDeleting(false);
@@ -240,15 +240,30 @@ export default function Trash() {
                             <li
                                 key={item.id}
                                 className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.type === 'folder' ? 'cursor-pointer' : ''}`}
+                                role={item.type === 'folder' ? 'button' : undefined}
+                                tabIndex={item.type === 'folder' ? 0 : undefined}
                                 onClick={() => {
                                     if (item.type === 'folder') {
                                         setCurrentTrashFolderId(item.id);
                                         setTrashFolderPath(p => [...p, { id: item.id, name: item.name }]);
                                     }
                                 }}
+                                onKeyDown={(e) => {
+                                    if (item.type === 'folder' && (e.key === 'Enter' || e.key === ' ')) {
+                                        setCurrentTrashFolderId(item.id);
+                                        setTrashFolderPath(p => [...p, { id: item.id, name: item.name }]);
+                                    }
+                                }}
                             >
                                 <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                                    <div className="mr-2 mt-3.5 flex items-start h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); }}>
+                                    <div
+                                        className="mr-2 mt-3.5 flex items-start h-full cursor-pointer"
+                                        role="checkbox"
+                                        tabIndex={0}
+                                        aria-checked={selectedItems.some(i => i.id === item.id && i.type === item.type)}
+                                        onClick={(e) => { e.stopPropagation(); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
+                                    >
                                         <input
                                             type="checkbox"
                                             checked={selectedItems.some(i => i.id === item.id && i.type === item.type)}
@@ -274,7 +289,12 @@ export default function Trash() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <div
+                                    className="flex items-center gap-2 shrink-0"
+                                    role="group"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                >
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -339,7 +359,7 @@ export default function Trash() {
 
             <ConfirmModal
                 isOpen={isMultiDeleteModalOpen}
-                title={`Excluir definitivamente ${selectedItems.length === 1 ? '1 item' : `${selectedItems.length} itens`}`}
+                title={`Excluir definitivamente ${selectedItems.length === 1 ? '1 item' : selectedItems.length + ' itens'}`}
                 description={`Tem certeza que deseja excluir permanentemente ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'}? Esta ação não pode ser desfeita.`}
                 confirmText={isMultiDeleting ? "Excluindo..." : "Excluir para sempre"}
                 cancelText="Cancelar"
@@ -350,7 +370,7 @@ export default function Trash() {
 
             <ConfirmModal
                 isOpen={isMultiRestoreModalOpen}
-                title={`Restaurar ${selectedItems.length === 1 ? '1 item' : `${selectedItems.length} itens`}`}
+                title={`Restaurar ${selectedItems.length === 1 ? '1 item' : selectedItems.length + ' itens'}`}
                 description={`Deseja restaurar ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'}? ${selectedItems.length === 1 ? 'Ele será recolocado' : 'Eles serão recolocados'} na estrutura de pastas ativa.`}
                 confirmText={isMultiRestoring ? "Restaurando..." : "Restaurar itens"}
                 cancelText="Cancelar"

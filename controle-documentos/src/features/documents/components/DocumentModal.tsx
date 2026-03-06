@@ -11,6 +11,7 @@ import { X, FileText, Search } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDocument } from '../hooks/useDocument';
 import { useAllFolders } from '../hooks/useFolders';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 interface DocumentModalProps {
     isOpen: boolean;
@@ -35,6 +36,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
 
     const [loading, setLoading] = useState(false);
     const { user } = useAuth();
+    const { currentWorkspace } = useWorkspace();
     const queryClient = useQueryClient();
     const [mounted, setMounted] = useState(false);
 
@@ -87,8 +89,8 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        globalThis.addEventListener('keydown', handleKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     // Filtragem para o seletor de pastas (já que temos muitas)
@@ -120,26 +122,29 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
             type,
             drive_url: driveUrl,
             folder_id: targetFolderId,
-            user_id: user.id
+            user_id: user.id,
+            organization_id: currentWorkspace?.organization_id
         };
 
         const { error } = documentId
             ? await supabase.from('documents').update(payload).eq('id', documentId)
             : await supabase.from('documents').insert([payload]);
 
-        if (!error) {
+        if (error) {
+            alert('Erro ao salvar documento: ' + error.message);
+        } else {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
             queryClient.invalidateQueries({ queryKey: ['folders'] });
             onClose();
-        } else {
-            alert('Erro ao salvar documento: ' + error.message);
         }
+
+
         setLoading(false);
     };
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-            <div className="fixed inset-0" onClick={onClose} />
+            <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={onClose} aria-label="Fechar modal" />
             <div className="relative bg-white dark:bg-slate-900 shadow-2xl rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
 
                 {/* Header */}
@@ -209,9 +214,17 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                                             {isFolderDropdownOpen && (
                                                 <div
                                                     className="fixed inset-0 z-40"
+                                                    role="button"
+                                                    tabIndex={-1}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setIsFolderDropdownOpen(false);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.stopPropagation();
+                                                            setIsFolderDropdownOpen(false);
+                                                        }
                                                     }}
                                                 />
                                             )}
@@ -419,7 +432,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
                         className="w-full sm:w-auto"
                         disabled={loading || isFetchingDoc}
                     >
-                        {loading ? 'Salvando...' : (documentId ? 'Atualizar Metadados' : 'Gerar e Salvar')}
+                        {loading ? 'Salvando...' : documentId ? 'Atualizar Metadados' : 'Gerar e Salvar'}
                     </Button>
                 </div>
             </div>

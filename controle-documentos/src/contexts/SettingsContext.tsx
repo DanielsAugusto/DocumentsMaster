@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/useAuth';
 
@@ -15,35 +15,35 @@ interface SettingsContextType {
 }
 
 const defaultSettings: UserSettings = {
-    primary_color: '#2563eb', // Tailwind blue-600
-    font_scale: 1.0,
+    primary_color: '#2563eb',
+    font_scale: 1,
     trash_retention_days: 30,
 };
 
+const VALID_HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+const sanitizeColor = (color: string): string =>
+    VALID_HEX_COLOR.test(color) ? color : defaultSettings.primary_color;
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
+export function SettingsProvider({ children }: Readonly<{ children: ReactNode }>) {
     const { user } = useAuth();
     const [settings, setSettings] = useState<UserSettings>(defaultSettings);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Effect to apply settings to the DOM
     useEffect(() => {
         const root = document.documentElement;
 
-        // Apply primary color variable
-        root.style.setProperty('--primary-color', settings.primary_color);
+        const safeColor = sanitizeColor(settings.primary_color);
+        root.style.setProperty('--primary-color', safeColor);
 
-        // Apply scale modifier variable
         root.style.setProperty('--font-scale', settings.font_scale.toString());
 
-        // Hard-set root font-size based on 16px rem base
         const newFontSize = `${16 * settings.font_scale}px`;
         root.style.fontSize = newFontSize;
-
     }, [settings]);
 
-    // Effect to fetch initial settings
     useEffect(() => {
         async function loadSettings() {
             if (!user) {
@@ -60,16 +60,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     .maybeSingle();
 
                 if (error) {
-                    console.error('Error loading settings:', error);
+                    // Silently fail — settings fall back to defaults
                 } else if (data) {
                     setSettings({
-                        primary_color: data.primary_color || defaultSettings.primary_color,
+                        primary_color: sanitizeColor(data.primary_color || defaultSettings.primary_color),
                         font_scale: data.font_scale || defaultSettings.font_scale,
                         trash_retention_days: data.trash_retention_days ?? defaultSettings.trash_retention_days,
                     });
                 }
-            } catch (error) {
-                console.error('Failed to fetch user settings', error);
+            } catch {
+                // Silently fail — settings fall back to defaults
             } finally {
                 setIsLoading(false);
             }
@@ -81,8 +81,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const updateSettings = async (newSettings: Partial<UserSettings>) => {
         if (!user) return;
 
-        // Optimistic UI update
-        const updated = { ...settings, ...newSettings };
+        const sanitized = { ...newSettings };
+        if (sanitized.primary_color) {
+            sanitized.primary_color = sanitizeColor(sanitized.primary_color);
+        }
+
+        const updated = { ...settings, ...sanitized };
         setSettings(updated);
 
         try {
@@ -93,17 +97,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     primary_color: updated.primary_color,
                     font_scale: updated.font_scale,
                     trash_retention_days: updated.trash_retention_days,
-                }, { onConflict: 'user_id' }); // Requires valid constraints if onConflict used instead of update/insert logic
+                }, { onConflict: 'user_id' });
 
             if (error) throw error;
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            // Optionally revert on failure but optimistic is fine for UX here.
+        } catch {
+            // Silently fail — optimistic update remains
         }
     };
 
+    const contextValue = useMemo(() => ({ settings, isLoading, updateSettings }), [settings, isLoading, updateSettings]);
+
     return (
-        <SettingsContext.Provider value={{ settings, isLoading, updateSettings }}>
+        <SettingsContext.Provider value={contextValue}>
             {children}
         </SettingsContext.Provider>
     );
