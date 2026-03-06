@@ -42,10 +42,15 @@ export default function DocumentListFeature() {
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [documentToEditId, setDocumentToEditId] = useState<string | null>(null);
 
-    // Effect for opening specific folders based on location state (e.g. going from Dashboard)
+    // Effect for opening specific folders/focusing document based on location state (e.g. going from Dashboard)
     useEffect(() => {
-        if (location.state?.folderId && allFoldersData.length > 0) {
-            const targetFolderId = location.state.folderId;
+        const targetFolderId = location.state?.folderId;
+        const targetFocusDocumentId = location.state?.focusDocumentId;
+
+        if (!targetFolderId && !targetFocusDocumentId) return;
+        if (targetFolderId && allFoldersData.length === 0) return;
+
+        if (targetFolderId) {
             setCurrentFolderId(targetFolderId);
 
             const buildPath = (id: string, currentPath: FolderType[] = []): FolderType[] => {
@@ -61,11 +66,15 @@ export default function DocumentListFeature() {
             };
 
             setFolderPath(buildPath(targetFolderId));
-
-            // Clear location state to prevent running this again on subsequent renders
-            window.history.replaceState({}, document.title);
         }
-    }, [location.state?.folderId, allFoldersData]);
+
+        if (targetFocusDocumentId) {
+            setPendingDocumentFocusId(targetFocusDocumentId);
+        }
+
+        // Clear location state to prevent running this again on subsequent renders
+        window.history.replaceState({}, document.title);
+    }, [location.state?.folderId, location.state?.focusDocumentId, allFoldersData]);
 
     useEffect(() => {
         if (location.state?.openNewDocument) {
@@ -203,7 +212,7 @@ export default function DocumentListFeature() {
 
     return (
         <>
-            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="mb-6 flex flex-col 2xl:flex-row gap-4 items-start 2xl:items-center justify-between">
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 font-medium overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full">
                     {currentFolderId && (
                         <button
@@ -251,8 +260,8 @@ export default function DocumentListFeature() {
                     ))}
                 </div>
 
-                <div className="flex shrink-0 gap-2">
-                    <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="shrink-0 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col 2xl:flex-row w-full 2xl:w-auto gap-2">
+                    <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="w-full 2xl:w-auto bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
                         <FolderPlus className="h-4 w-4 mr-2" />
                         Nova Pasta
                     </Button>
@@ -261,7 +270,7 @@ export default function DocumentListFeature() {
                             setDocumentToEditId(null);
                             setIsDocumentModalOpen(true);
                         }}
-                        className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full 2xl:w-auto bg-blue-600 hover:bg-blue-700 text-white"
                     >
                         <FileIcon className="h-4 w-4 mr-2" />
                         Novo Arquivo
@@ -270,11 +279,11 @@ export default function DocumentListFeature() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
-                <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full sm:w-1/3">Seus Documentos</h3>
+                <div className="px-6 py-4 flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full 2xl:w-1/3">Seus Documentos</h3>
 
-                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto justify-end items-center flex-wrap xl:flex-nowrap">
-                        <div className="relative w-full md:w-48 xl:w-56 shrink-0 group">
+                    <div className="flex flex-col 2xl:flex-row gap-3 w-full 2xl:w-auto justify-end items-stretch 2xl:items-center">
+                        <div className="relative w-full 2xl:w-56 shrink-0 group">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                             </div>
@@ -282,7 +291,7 @@ export default function DocumentListFeature() {
                                 <button
                                     type="button"
                                     onClick={() => setIsKeywordFilterOpen((prev) => !prev)}
-                                    className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-9 text-sm text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:hover:bg-slate-900"
+                                    className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-9 text-lg text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:hover:bg-slate-900"
                                     title="Filtrar por Palavras-chave"
                                 >
                                     <span className="truncate text-left">
@@ -332,7 +341,7 @@ export default function DocumentListFeature() {
                             </div>
                         </div>
 
-                        <div className="relative w-full md:w-80">
+                        <div className="relative w-full 2xl:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                             </div>
@@ -352,7 +361,7 @@ export default function DocumentListFeature() {
                             />
                         </div>
 
-                        <div className="relative w-full md:w-40 shrink-0 group">
+                        <div className="relative w-full 2xl:w-40 shrink-0 group">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                             </div>
@@ -374,7 +383,7 @@ export default function DocumentListFeature() {
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                     {/* Skeleton Loading State */}
                     {(loading || loadingFolders) && Array.from({ length: 3 }).map((_, idx) => (
-                        <li key={idx} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
+                        <li key={idx} className="p-6 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-6 animate-pulse">
                             <div className="flex items-start flex-1 min-w-0">
                                 <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded mr-4 mt-1 flex-shrink-0"></div>
                                 <div className="flex-1 space-y-3">
@@ -391,7 +400,7 @@ export default function DocumentListFeature() {
                         <li
                             key={folder.id}
                             style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
-                            className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 animate-in fade-in slide-in-from-bottom-4 group cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                            className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 animate-in fade-in slide-in-from-bottom-4 group cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                             onClick={() => {
                                 setCurrentFolderId(folder.id);
                                 setFolderPath(path => [...path, folder]);
@@ -408,14 +417,14 @@ export default function DocumentListFeature() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                     variant="outline"
                                     onClick={() => {
                                         setFolderToRename(folder);
                                         setIsRenameFolderOpen(true);
                                     }}
-                                    className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                    className="w-52 sm:w-56 2xl:w-auto 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                     size="sm"
                                     title="Renomear Pasta"
                                 >
@@ -448,7 +457,7 @@ export default function DocumentListFeature() {
                                 ref={(element) => {
                                     documentCardRefs.current[doc.id] = element;
                                 }}
-                                className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col xl:flex-row xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 animate-in fade-in slide-in-from-bottom-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 onClick={() => setPreviewDoc(doc)}
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                             >
@@ -489,7 +498,7 @@ export default function DocumentListFeature() {
                                             </div>
                                         );
                                     })()}
-                                    <div className="min-w-0 flex-1 lg:grid lg:grid-cols-2 lg:gap-4">
+                                    <div className="min-w-0 flex-1 2xl:grid 2xl:grid-cols-2 2xl:gap-4">
                                         <div className="space-y-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-2">
                                                 {doc.keywords && (
@@ -525,7 +534,7 @@ export default function DocumentListFeature() {
                                         </div>
 
                                         <div
-                                            className={`hidden lg:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id)
+                                            className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.find((folder) => folder.id === doc.folder_id)
                                                 ? 'justify-between'
                                                 : 'justify-end'
                                                 }`}
@@ -565,7 +574,7 @@ export default function DocumentListFeature() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1 sm:gap-2 w-full xl:w-auto mt-4 xl:mt-0 xl:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
                                         onClick={() => {
@@ -573,7 +582,7 @@ export default function DocumentListFeature() {
                                             setIsDocumentModalOpen(true);
                                         }}
                                         title="Editar Documento"
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                     >
                                         <Edit2 className="h-4 w-4 sm:mr-2" />
@@ -583,7 +592,7 @@ export default function DocumentListFeature() {
                                         variant="outline"
                                         asChild
                                         title="Abrir no Google Drive"
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                     >
                                         <a href={doc.drive_url} target="_blank" rel="noopener noreferrer">
@@ -594,7 +603,7 @@ export default function DocumentListFeature() {
                                     <Button
                                         variant="outline"
                                         onClick={() => setDocumentToMove(doc)}
-                                        className="flex-1 xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
                                         title="Mover de pasta"
                                         size="sm"
                                     >
@@ -605,7 +614,7 @@ export default function DocumentListFeature() {
                                     <Button
                                         variant="ghost"
                                         onClick={() => setDocumentToDelete(doc.id)}
-                                        className="flex-1 xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
                                         title="Excluir"
                                         size="sm"
                                     >

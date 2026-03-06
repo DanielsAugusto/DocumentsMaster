@@ -21,6 +21,7 @@ export const useCreateFolder = () => {
         mutationFn: createFolder,
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['folders', variables.parent_id || null] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
         },
     });
 };

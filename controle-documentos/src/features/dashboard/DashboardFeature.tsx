@@ -260,7 +260,11 @@ export default function DashboardFeature() {
                                     recentDocuments.map((doc) => (
                                         <tr
                                             key={doc.id}
-                                            onClick={() => navigate(`/documentos?q=${encodeURIComponent(doc.title)}`, { state: { folderId: doc.folder_id } })}
+                                            onClick={() =>
+                                                navigate('/documentos', {
+                                                    state: { folderId: doc.folder_id, focusDocumentId: doc.id }
+                                                })
+                                            }
                                             className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group"
                                         >
                                             <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex flex-col md:flex-row md:items-center gap-3">
@@ -308,10 +312,10 @@ export default function DashboardFeature() {
                     <Button
                         size="lg"
                         onClick={() => navigate('/documentos', { state: { openNewDocument: true } })}
-                        className="w-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95 space-x-2"
+                        className="w-full min-h-14 h-auto py-3 px-3 sm:px-5 text-[11px] sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-normal leading-tight text-center"
                     >
-                        <span>Adicione um novo documento</span>
-                        <ArrowRight className="h-5 w-5" />
+                        <span className="text-center">Adicione um novo documento</span>
+                        <ArrowRight className="h-4 w-4 shrink-0" />
                     </Button>
                 </div>
             </div>

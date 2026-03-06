@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Home, FileText, LogOut, Layout, Settings } from 'lucide-react';
+import { Home, FileText, LogOut, Layout, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
@@ -34,6 +34,15 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <div className="h-[80px] shrink-0 flex items-center px-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
                 <Layout className="h-8 w-8 text-primary dark:text-primary mr-3" />
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">DocControl</span>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen?.(false)}
+                    className="ml-auto lg:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200 transition-colors"
+                    aria-label="Fechar menu"
+                    title="Fechar menu"
+                >
+                    <X className="h-5 w-5" />
+                </button>
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
