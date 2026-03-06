@@ -40,21 +40,21 @@ export default function SettingsFeature() {
     };
 
     if (isLoading) {
-        return <div className="p-8 animate-pulse text-gray-500">Carregando configurações...</div>;
+        return <div className="p-4 sm:p-6 lg:p-8 animate-pulse text-gray-500">Carregando configurações...</div>;
     }
 
     return (
-        <div className="w-full bg-white dark:bg-slate-900 shadow-sm rounded-lg border border-gray-100 dark:border-gray-800 transition-colors p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Aparência e Acessibilidade</h2>
+        <div className="w-full bg-white dark:bg-slate-900 shadow-sm rounded-lg border border-gray-100 dark:border-gray-800 transition-colors p-4 sm:p-6 lg:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-5 sm:mb-6">Aparência e Acessibilidade</h2>
 
-            <div className="space-y-10">
+            <div className="space-y-8 sm:space-y-10">
                 {/* Text Scale Slider */}
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <Label htmlFor="font-scale" className="text-lg font-medium">
                             Tamanho do Texto
                         </Label>
-                        <span className="text-sm font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                        <span className="self-start sm:self-auto text-sm font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                             {Math.round(localScale * 100)}%
                         </span>
                     </div>
@@ -68,18 +68,18 @@ export default function SettingsFeature() {
                         onChange={(e) => setLocalScale(Number.parseFloat(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <div className="flex justify-between text-xs text-gray-400">
+                    <div className="grid grid-cols-3 text-[11px] sm:text-xs text-gray-400 gap-2">
                         <span>Menor (80%)</span>
-                        <span>Padrão (100%)</span>
-                        <span>Maior (150%)</span>
+                        <span className="text-center">Padrão (100%)</span>
+                        <span className="text-right">Maior (150%)</span>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 border-l-4 border-primary pl-3 py-1">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 border-l-4 border-primary pl-3 py-1 leading-relaxed">
                         O tamanho do texto do aplicativo só será ajustado quando você salvar. Veja a prévia dinâmica abaixo:
                     </p>
 
                     {/* Live Text Preview Box */}
                     <div
-                        className="mt-6 p-6 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-gray-700 transition-all"
+                        className="mt-5 sm:mt-6 p-4 sm:p-6 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-gray-700 transition-all overflow-hidden"
                         style={{ fontSize: `${16 * localScale}px` }}
                     >
                         <h3 className="font-bold text-gray-900 dark:text-white mb-2 leading-tight">
@@ -97,7 +97,7 @@ export default function SettingsFeature() {
                 <hr className="border-gray-100 dark:border-gray-800" />
 
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <Label htmlFor="trash-retention" className="text-lg font-medium">
                             Limpeza Automática da Lixeira
                         </Label>
@@ -122,23 +122,21 @@ export default function SettingsFeature() {
 
                 <hr className="border-gray-100 dark:border-gray-800" />
 
-                <div className="flex justify-end pt-6 gap-4 border-t border-gray-100 dark:border-gray-800 mt-6">
+                <div className="flex flex-col-reverse md:flex-row md:justify-end pt-5 sm:pt-6 gap-2 sm:gap-3 md:gap-4 border-t border-gray-100 dark:border-gray-800 mt-6">
                     <Button
                         type="button"
                         variant="ghost"
-                        size="lg"
                         onClick={handleReset}
                         disabled={isSaving}
-                        className="text-gray-500 hover:text-gray-900"
+                        className="w-full md:w-auto !h-10 sm:!h-11 !px-3 sm:!px-4 !text-sm text-gray-500 hover:text-gray-900 whitespace-normal"
                     >
                         Restaurar Padrão
                     </Button>
                     <Button
                         type="button"
-                        size="lg"
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="transition-transform active:scale-95"
+                        className="w-full md:w-auto !h-10 sm:!h-11 !px-3 sm:!px-4 !text-sm transition-transform active:scale-95 whitespace-normal"
                     >
                         {isSaving ? 'Salvando...' : 'Salvar Preferências'}
                     </Button>

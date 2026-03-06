@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { getTrashItems, TrashItem, restoreItemFromTrash, permanentlyDeleteFromTrash, emptyTrash } from '@/features/documents/api/folders';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, RefreshCw, Folder, File, AlertCircle, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Trash2, RefreshCw, Folder, File, AlertCircle, ArrowLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
@@ -15,6 +15,21 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
     onDelete: () => void;
     onOpenFolder: () => void;
 }>) {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!isMobileMenuOpen) return;
+
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (mobileMenuRef.current?.contains(event.target as Node)) return;
+            setIsMobileMenuOpen(false);
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, [isMobileMenuOpen]);
+
     return (
         <li
             className={`transition-colors flex items-stretch group ${item.type === 'folder' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
@@ -59,15 +74,13 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
                         <p className="text-lg font-medium text-gray-900 dark:text-white truncate" title={item.name}>
                             {item.name}
                         </p>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="capitalize">{item.type === 'folder' ? 'Pasta' : 'Documento'}</span>
-                            <span>•</span>
-                            <span>Excluído em {new Date(item.deleted_at).toLocaleDateString()}</span>
+                        <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Excluído em {new Date(item.deleted_at).toLocaleDateString()}
                         </div>
                     </div>
                 </button>
                 <div
-                    className="flex items-center gap-2 shrink-0"
+                    className="hidden xl:flex items-center gap-2 shrink-0"
                     role="toolbar"
                     aria-label="Ações do item"
                     onClick={(e) => e.stopPropagation()}
@@ -94,6 +107,49 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
                         <span className="sr-only">Excluir</span>
                     </Button>
                 </div>
+            </div>
+            <div
+                ref={mobileMenuRef}
+                className="xl:hidden relative flex items-center pr-2 sm:pr-4 z-10 self-stretch"
+            >
+                <button
+                    type="button"
+                    aria-label={`Ações do item ${item.name}`}
+                    className="h-9 w-9 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer flex items-center justify-center"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMobileMenuOpen((prev) => !prev);
+                    }}
+                >
+                    <MoreVertical className="h-4 w-4" />
+                </button>
+
+                {isMobileMenuOpen && (
+                    <div className="absolute right-full mr-2 top-0 min-w-[160px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 shadow-lg p-1.5 flex flex-col gap-1">
+                        <button
+                            type="button"
+                            className="text-left px-3 py-2 rounded-md text-sm text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileMenuOpen(false);
+                                onRestore();
+                            }}
+                        >
+                            Restaurar
+                        </button>
+                        <button
+                            type="button"
+                            className="text-left px-3 py-2 rounded-md text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMobileMenuOpen(false);
+                                onDelete();
+                            }}
+                        >
+                            Excluir
+                        </button>
+                    </div>
+                )}
             </div>
         </li>
     );

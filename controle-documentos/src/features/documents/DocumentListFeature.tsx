@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload } from 'lucide-react';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload, MoreVertical } from 'lucide-react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,7 @@ export default function DocumentListFeature() {
     const [isMultiDeleteModalOpen, setIsMultiDeleteModalOpen] = useState(false);
     const [isMultiDeleting, setIsMultiDeleting] = useState(false);
     const [isMultiMoveModalOpen, setIsMultiMoveModalOpen] = useState(false);
+    const [openMobileActionMenu, setOpenMobileActionMenu] = useState<string | null>(null);
 
     // Effect for opening specific folders/focusing document based on location state (e.g. going from Dashboard)
     useEffect(() => {
@@ -166,6 +167,45 @@ export default function DocumentListFeature() {
         return currentPath;
     };
 
+    const handleMobileFolderAction = (action: string, folder: FolderType) => {
+        if (action === 'rename') {
+            setFolderToRename(folder);
+            setIsRenameFolderOpen(true);
+            return;
+        }
+
+        if (action === 'move') {
+            setFolderToMove(folder);
+            return;
+        }
+
+        if (action === 'delete') {
+            setFolderToDelete(folder);
+        }
+    };
+
+    const handleMobileDocumentAction = (action: string, doc: Document) => {
+        if (action === 'edit') {
+            setDocumentToEditId(doc.id);
+            setIsDocumentModalOpen(true);
+            return;
+        }
+
+        if (action === 'drive') {
+            globalThis.open(doc.drive_url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        if (action === 'move') {
+            setDocumentToMove(doc);
+            return;
+        }
+
+        if (action === 'delete') {
+            setDocumentToDelete(doc.id);
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (!keywordFilterRef.current) return;
@@ -176,6 +216,17 @@ export default function DocumentListFeature() {
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const handleMobileMenuOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest('[data-mobile-action-menu-root="true"]')) return;
+            setOpenMobileActionMenu(null);
+        };
+
+        document.addEventListener('mousedown', handleMobileMenuOutside);
+        return () => document.removeEventListener('mousedown', handleMobileMenuOutside);
     }, []);
 
     const handleDelete = async (id: string) => {
@@ -318,8 +369,8 @@ export default function DocumentListFeature() {
 
     return (
         <>
-            <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 font-medium overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full">
+            <div className="mb-6 flex flex-col gap-3 items-start">
+                <div className="order-2 flex flex-wrap items-center gap-y-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium w-full max-w-full">
                     {currentFolderId && (
                         <button
                             onClick={() => {
@@ -331,7 +382,7 @@ export default function DocumentListFeature() {
                                     setFolderPath([]);
                                 }
                             }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shrink-0 mr-3 px-2.5 py-1.5 rounded-md shadow-sm text-xs font-semibold"
+                            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 mr-3 px-2.5 py-1.5 rounded-md shadow-sm text-xs font-semibold"
                             title="Voltar ao nível anterior"
                         >
                             <ArrowLeft className="h-3.5 w-3.5" />
@@ -343,13 +394,13 @@ export default function DocumentListFeature() {
                             setCurrentFolderId(null);
                             setFolderPath([]);
                         }}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1 shrink-0"
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
                     >
                         <Folder className="h-4 w-4" />
                         Acesso Rápido
                     </button>
                     {folderPath.map((folder, index) => (
-                        <div key={folder.id} className="flex items-center shrink-0">
+                        <div key={folder.id} className="flex items-center">
                             <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
                             <button
                                 onClick={() => {
@@ -366,9 +417,9 @@ export default function DocumentListFeature() {
                     ))}
                 </div>
 
-                <div className="flex flex-col lg:flex-row w-full lg:w-auto gap-2 shrink-0">
-                    <div className="flex gap-2 w-full lg:w-auto">
-                        <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="flex-1 min-w-0 lg:flex-none bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                <div className="order-1 flex flex-col w-full gap-2 shrink-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 w-full">
+                        <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="flex-1 min-w-0 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
                             <FolderPlus className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
                             <span className="text-xs sm:text-sm truncate">Nova Pasta</span>
                         </Button>
@@ -376,33 +427,33 @@ export default function DocumentListFeature() {
                             <Button
                                 onClick={() => setIsImportDriveModalOpen(true)}
                                 variant="outline"
-                                className="flex-1 min-w-0 lg:flex-none text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-800/60"
+                                className="flex-1 min-w-0 text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-800/60"
                                 title="Importar arquivos de uma pasta pública do Google Drive"
                             >
                                 <CloudDownload className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
                                 <span className="text-xs sm:text-sm truncate">Importar</span>
                             </Button>
                         )}
+                        <Button
+                            onClick={() => {
+                                setDocumentToEditId(null);
+                                setIsDocumentModalOpen(true);
+                            }}
+                            className="w-full sm:col-span-2 xl:col-span-1 bg-blue-600 hover:bg-blue-700 text-white min-w-0"
+                        >
+                            <FileIcon className="h-4 w-4 mr-2 shrink-0" />
+                            <span className="truncate">Novo Arquivo</span>
+                        </Button>
                     </div>
-                    <Button
-                        onClick={() => {
-                            setDocumentToEditId(null);
-                            setIsDocumentModalOpen(true);
-                        }}
-                        className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white min-w-0"
-                    >
-                        <FileIcon className="h-4 w-4 mr-2 shrink-0" />
-                        <span className="truncate">Novo Arquivo</span>
-                    </Button>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
-                <div className="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-gray-100 dark:border-gray-800 gap-4 lg:gap-6 flex-wrap">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white shrink-0">Seus Documentos</h3>
+                <div className="px-4 sm:px-6 py-4 flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between border-b border-gray-100 dark:border-gray-800 gap-3 2xl:gap-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white shrink-0">Seus Documentos</h3>
 
-                    <div className="flex flex-col lg:flex-row gap-3 w-full lg:flex-1 justify-end items-stretch lg:items-center min-w-0">
-                        <div className="relative flex-1 w-full lg:w-auto lg:max-w-[16rem] xl:max-w-xs order-1 lg:order-none">
+                    <div className="flex flex-col gap-2 w-full 2xl:flex-1 justify-end items-stretch min-w-0">
+                        <div className="relative w-full">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                             </div>
@@ -422,8 +473,8 @@ export default function DocumentListFeature() {
                             />
                         </div>
 
-                        <div className="flex flex-row gap-2 w-full lg:w-auto order-2 lg:order-none">
-                            <div className="relative flex-1 min-w-0 lg:w-48 xl:w-56 group">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                            <div className="relative min-w-0 group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                                 </div>
@@ -470,7 +521,7 @@ export default function DocumentListFeature() {
                                 </div>
                             </div>
 
-                            <div className="relative flex-1 min-w-0 lg:w-36 xl:w-40 group">
+                            <div className="relative min-w-0 group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
                                 </div>
@@ -550,14 +601,14 @@ export default function DocumentListFeature() {
                             </label>
                             <button
                                 type="button"
-                                className="flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-row items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-2 sm:gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                className="relative flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col lg:flex-row lg:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-3 sm:gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                                 onClick={() => {
                                     setCurrentFolderId(folder.id);
                                     setFolderPath(path => [...path, folder]);
                                     setSelectedType('Todos');
                                 }}
                             >
-                                <div className="flex flex-1 items-center min-w-0">
+                                <div className="flex w-full flex-1 items-center min-w-0">
                                     <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-3 sm:mr-4 flex-shrink-0 shadow-sm">
                                         <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
                                     </div>
@@ -567,52 +618,102 @@ export default function DocumentListFeature() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-end gap-1 sm:gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
-                                    <Button
-                                        variant="outline"
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFolderToRename(folder);
-                                            setIsRenameFolderOpen(true);
-                                        }}
-                                        className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                        size="sm"
-                                        title="Renomear Pasta"
-                                    >
-                                        <Edit2 className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Renomear</span>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFolderToMove(folder);
-                                        }}
-                                        className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                        title="Mover de pasta"
-                                        size="sm"
-                                    >
-                                        <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Mover</span>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFolderToDelete(folder);
-                                        }}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3 h-8 sm:h-9"
-                                        size="sm"
-                                        title="Excluir Pasta"
-                                    >
-                                        <Trash2 className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Excluir</span>
-                                    </Button>
+                                <div className="hidden">
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setFolderToRename(folder);
+                                                setIsRenameFolderOpen(true);
+                                            }}
+                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
+                                            size="sm"
+                                            title="Renomear Pasta"
+                                        >
+                                            <Edit2 className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Renomear</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setFolderToMove(folder);
+                                            }}
+                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
+                                            title="Mover de pasta"
+                                            size="sm"
+                                        >
+                                            <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Mover</span>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setFolderToDelete(folder);
+                                            }}
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3 h-8 sm:h-9"
+                                            size="sm"
+                                            title="Excluir Pasta"
+                                        >
+                                            <Trash2 className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Excluir</span>
+                                        </Button>
                                 </div>
                             </button>
+                            <div className="relative flex items-center pr-2 sm:pr-4 z-10 self-stretch" data-mobile-action-menu-root="true">
+                                <button
+                                    type="button"
+                                    aria-label={`Ações da pasta ${folder.name}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMobileActionMenu((prev) => prev === `folder-${folder.id}` ? null : `folder-${folder.id}`);
+                                    }}
+                                    className="h-9 w-9 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer flex items-center justify-center"
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </button>
+                                {openMobileActionMenu === `folder-${folder.id}` && (
+                                    <div className="absolute right-full mr-2 top-0 min-w-[160px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 shadow-lg p-1.5 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            className="text-left px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMobileFolderAction('rename', folder);
+                                                setOpenMobileActionMenu(null);
+                                            }}
+                                        >
+                                            Renomear
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="text-left px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMobileFolderAction('move', folder);
+                                                setOpenMobileActionMenu(null);
+                                            }}
+                                        >
+                                            Mover
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="text-left px-3 py-2 rounded-md text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMobileFolderAction('delete', folder);
+                                                setOpenMobileActionMenu(null);
+                                            }}
+                                        >
+                                            Excluir
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </li>
                     ))}
 
@@ -655,10 +756,10 @@ export default function DocumentListFeature() {
                                 </label>
                                 <button
                                     type="button"
-                                    className="flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-row items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-2 sm:gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                    className="relative flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col lg:flex-row lg:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-3 sm:gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                                     onClick={() => setPreviewDoc(doc)}
                                 >
-                                    <div className="flex items-start min-w-0 flex-1">
+                                    <div className="flex items-start min-w-0 flex-1 w-full">
                                         {(() => {
                                             const type = doc.type?.toUpperCase() || '';
                                             if (type === 'PDF') {
@@ -771,65 +872,126 @@ export default function DocumentListFeature() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-end gap-1 sm:gap-2 shrink-0 lg:opacity-100 transition-opacity">
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDocumentToEditId(doc.id);
-                                                setIsDocumentModalOpen(true);
-                                            }}
-                                            title="Editar Documento"
-                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                            size="sm"
-                                        >
-                                            <Edit2 className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Editar</span>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            asChild
-                                            title="Abrir no Google Drive"
-                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                            size="sm"
-                                        >
-                                            <a href={doc.drive_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                                <ExternalLink className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Drive</span>
-                                            </a>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDocumentToMove(doc);
-                                            }}
-                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                            title="Mover de pasta"
-                                            size="sm"
-                                        >
-                                            <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Mover</span>
-                                        </Button>
+                                    <div className="hidden">
+                                            <Button
+                                                variant="outline"
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDocumentToEditId(doc.id);
+                                                    setIsDocumentModalOpen(true);
+                                                }}
+                                                title="Editar Documento"
+                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
+                                                size="sm"
+                                            >
+                                                <Edit2 className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Editar</span>
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                title="Abrir no Google Drive"
+                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
+                                                size="sm"
+                                            >
+                                                <a href={doc.drive_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                    <ExternalLink className="h-4 w-4 sm:mr-2" />
+                                                    <span className="hidden sm:inline">Drive</span>
+                                                </a>
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDocumentToMove(doc);
+                                                }}
+                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
+                                                title="Mover de pasta"
+                                                size="sm"
+                                            >
+                                                <FolderOutput className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Mover</span>
+                                            </Button>
 
-                                        <Button
-                                            variant="ghost"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDocumentToDelete(doc.id);
-                                            }}
-                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-2 sm:px-3 h-8 sm:h-9"
-                                            title="Excluir"
-                                            size="sm"
-                                        >
-                                            <Trash2 className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Excluir</span>
-                                        </Button>
+                                            <Button
+                                                variant="ghost"
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDocumentToDelete(doc.id);
+                                                }}
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-2 sm:px-3 h-8 sm:h-9"
+                                                title="Excluir"
+                                                size="sm"
+                                            >
+                                                <Trash2 className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">Excluir</span>
+                                            </Button>
                                     </div>
                                 </button>
+                                <div className="relative flex items-center pr-2 sm:pr-4 z-10 self-stretch" data-mobile-action-menu-root="true">
+                                    <button
+                                        type="button"
+                                        aria-label={`Ações do documento ${doc.title}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenMobileActionMenu((prev) => prev === `doc-${doc.id}` ? null : `doc-${doc.id}`);
+                                        }}
+                                        className="h-9 w-9 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer flex items-center justify-center"
+                                    >
+                                        <MoreVertical className="h-4 w-4" />
+                                    </button>
+                                    {openMobileActionMenu === `doc-${doc.id}` && (
+                                        <div className="absolute right-full mr-2 top-0 min-w-[160px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 shadow-lg p-1.5 flex flex-col gap-1">
+                                            <button
+                                                type="button"
+                                                className="text-left px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMobileDocumentAction('edit', doc);
+                                                    setOpenMobileActionMenu(null);
+                                                }}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-left px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMobileDocumentAction('drive', doc);
+                                                    setOpenMobileActionMenu(null);
+                                                }}
+                                            >
+                                                Drive
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-left px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMobileDocumentAction('move', doc);
+                                                    setOpenMobileActionMenu(null);
+                                                }}
+                                            >
+                                                Mover
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-left px-3 py-2 rounded-md text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMobileDocumentAction('delete', doc);
+                                                    setOpenMobileActionMenu(null);
+                                                }}
+                                            >
+                                                Excluir
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </li>
                         ))
                     )}

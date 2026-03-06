@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { useAllFolders } from '@/features/documents/hooks/useFolders';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { FileText, FileSpreadsheet, FileImage, File as FileIcon, Search, ArrowRight, Activity, Clock, Folder } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export default function DashboardFeature() {
-    const { data: documents = [], isLoading } = useDocuments('all');
-    const { data: folders = [] } = useAllFolders();
+    const { currentWorkspace } = useWorkspace();
+    const orgId = currentWorkspace?.organization_id;
+    const { data: documents = [], isLoading } = useDocuments('all', orgId);
+    const { data: folders = [] } = useAllFolders(orgId);
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -86,19 +89,43 @@ export default function DashboardFeature() {
         return <FileIcon className="h-5 w-5 text-gray-500" />;
     };
 
+    const formatCreatedAt = (createdAt: string) => {
+        const date = new Date(createdAt);
+        if (Number.isNaN(date.getTime())) {
+            return { dayMonth: '-', year: '' };
+        }
+
+        return {
+            dayMonth: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' }).format(date),
+            year: new Intl.DateTimeFormat('pt-BR', { year: 'numeric' }).format(date)
+        };
+    };
+
+    const formatCompactCreatedAt = (createdAt: string) => {
+        const date = new Date(createdAt);
+        if (Number.isNaN(date.getTime())) {
+            return { dayMonth: '-', year: '' };
+        }
+
+        return {
+            dayMonth: new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' }).format(date),
+            year: new Intl.DateTimeFormat('pt-BR', { year: 'numeric' }).format(date)
+        };
+    };
+
     return (
-        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Global Search Area */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 text-center relative z-10">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 lg:p-10 shadow-sm border border-gray-100 dark:border-gray-800 text-center relative z-10 overflow-visible">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-600 rounded-t-2xl"></div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight mt-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white mb-2 sm:mb-4 tracking-tight mt-2">
                     Encontre o que você precisa
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
+                <p className="text-gray-500 dark:text-gray-400 mb-5 sm:mb-7 max-w-2xl mx-auto text-sm sm:text-base">
                     Busque em todo o seu repositório de documentos por título, palavras-chave, assunto, remetente ou entidade.
                 </p>
 
-                <form onSubmit={handleSearch} className="max-w-3xl mx-auto flex flex-col sm:block relative group">
+                <form onSubmit={handleSearch} className="max-w-3xl mx-auto flex flex-col sm:flex-row items-stretch gap-3 sm:gap-2 relative group">
                     <div className="relative w-full">
                         <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none z-10">
                             <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 group-focus-within:text-primary transition-colors" />
@@ -113,11 +140,11 @@ export default function DashboardFeature() {
                             }}
                             onFocus={() => setShowSuggestions(true)}
                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                            className="pl-12 sm:pl-16 pr-4 sm:pr-36 py-6 sm:py-8 text-base sm:text-lg rounded-xl shadow-sm border-gray-200 focus-visible:ring-primary focus-visible:border-primary dark:border-gray-700 bg-gray-50 dark:bg-slate-950 transition-all hover:bg-white dark:hover:bg-slate-900 w-full"
+                            className="h-12 sm:h-14 pl-11 sm:pl-14 pr-4 text-sm sm:text-base rounded-xl shadow-sm border-gray-200 focus-visible:ring-primary focus-visible:border-primary dark:border-gray-700 bg-gray-50 dark:bg-slate-950 transition-all hover:bg-white dark:hover:bg-slate-900 w-full"
                         />
                     </div>
-                    <div className="sm:absolute sm:inset-y-0 sm:right-2 flex items-center w-full sm:w-auto z-10 mt-3 sm:mt-0 sm:py-2">
-                        <Button type="submit" size="lg" className="w-full sm:w-auto rounded-lg h-14 sm:h-full px-8 font-semibold text-base sm:text-lg shadow-sm sm:shadow-none">
+                    <div className="w-full sm:w-auto sm:shrink-0">
+                        <Button type="submit" size="lg" className="w-full sm:w-auto rounded-xl h-12 sm:h-14 px-6 sm:px-7 font-semibold text-sm sm:text-base shadow-sm">
                             Buscar
                         </Button>
                     </div>
@@ -160,16 +187,16 @@ export default function DashboardFeature() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 lg:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
                     <div className="flex items-start justify-between gap-3 sm:gap-4">
                         <div className="min-w-0">
                             <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">Total acervo</p>
-                        {isLoading ? (
+                            {isLoading ? (
                                 <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-2"></div>
-                        ) : (
+                            ) : (
                                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{metrics.total}</p>
-                        )}
+                            )}
                         </div>
                         <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                             <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -177,15 +204,15 @@ export default function DashboardFeature() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 lg:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
                     <div className="flex items-start justify-between gap-3 sm:gap-4">
                         <div className="min-w-0">
                             <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">Últimos 7 dias</p>
-                        {isLoading ? (
+                            {isLoading ? (
                                 <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-2"></div>
-                        ) : (
+                            ) : (
                                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">+{metrics.recentCount}</p>
-                        )}
+                            )}
                         </div>
                         <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                             <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -193,7 +220,7 @@ export default function DashboardFeature() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 col-span-2 lg:col-span-2">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 lg:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 sm:col-span-2 2xl:col-span-2">
                     <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Distribuição</p>
                     {(() => {
                         if (isLoading) {
@@ -235,9 +262,9 @@ export default function DashboardFeature() {
             </div>
 
             {/* Main Content Area */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 2xl:grid-cols-3 gap-4 sm:gap-6 xl:gap-8">
                 {/* Recent Documents Table (Takes up 2/3 space on large screens) */}
-                <div className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="2xl:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between bg-gray-50/50 dark:bg-slate-900/50 gap-4">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Clock className="h-5 w-5 text-gray-400 shrink-0" />
@@ -248,13 +275,13 @@ export default function DashboardFeature() {
                         </Button>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
-                            <thead className="text-xs uppercase bg-gray-50 dark:bg-slate-950/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                    <div className="overflow-x-hidden">
+                        <table className="w-full table-auto 2xl:table-fixed text-left text-sm text-gray-600 dark:text-gray-400">
+                            <thead className="hidden 2xl:table-header-group text-xs uppercase bg-gray-50 dark:bg-slate-950/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
                                 <tr>
-                                    <th className="px-4 sm:px-6 py-4 font-semibold">Documento</th>
-                                    <th className="px-[1px] py-4 font-semibold w-[1%] whitespace-nowrap">Tipo</th>
-                                    <th className="px-[1px] py-4 font-semibold text-right w-[1%] whitespace-nowrap">Cadastrado em</th>
+                                    <th className="w-full 2xl:w-[58%] px-3 sm:px-5 py-3.5 font-semibold">Documento</th>
+                                    <th className="hidden 2xl:table-cell w-[24%] px-3 sm:px-4 py-3.5 font-semibold whitespace-nowrap">Pasta</th>
+                                    <th className="hidden 2xl:table-cell w-[18%] px-3 sm:px-4 py-3.5 font-semibold text-right whitespace-nowrap">Data</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -262,9 +289,9 @@ export default function DashboardFeature() {
                                     if (isLoading) {
                                         return Array.from({ length: 3 }).map((_, i) => (
                                             <tr key={`skeleton-${String(i)}`} className="animate-pulse">
-                                                <td className="px-[1px] py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
-                                                <td className="px-[1px] py-4 w-[1%] whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div></td>
-                                                <td className="px-[1px] py-4 w-[1%] whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
+                                                <td className="px-3 sm:px-5 py-3.5"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
+                                                <td className="hidden 2xl:table-cell px-3 sm:px-4 py-3.5 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></td>
+                                                <td className="hidden 2xl:table-cell px-3 sm:px-4 py-3.5 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
                                             </tr>
                                         ));
                                     }
@@ -272,48 +299,75 @@ export default function DashboardFeature() {
                                     if (recentDocuments.length === 0) {
                                         return (
                                             <tr>
-                                                <td colSpan={3} className="px-[1px] py-12 text-center text-gray-500">Nenhum documento recente.</td>
+                                                <td colSpan={3} className="px-4 py-12 text-center text-gray-500">Nenhum documento recente.</td>
                                             </tr>
                                         );
                                     }
 
-                                    return recentDocuments.map((doc) => (
-                                        <tr
-                                            key={doc.id}
-                                            onClick={() =>
-                                                navigate('/documentos', {
-                                                    state: { folderId: doc.folder_id, focusDocumentId: doc.id }
-                                                })
-                                            }
-                                            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group"
-                                        >
-                                                <td className="px-[1px] py-4 font-medium text-gray-900 dark:text-white flex flex-col md:flex-row md:items-center gap-3">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="h-10 w-10 rounded-lg bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-gray-800 flex items-center justify-center shrink-0">
-                                                        {getFileIcon(doc.type)}
+                                    return recentDocuments.map((doc) => {
+                                        const formattedCreatedAt = formatCreatedAt(doc.created_at);
+                                        const compactCreatedAt = formatCompactCreatedAt(doc.created_at);
+                                        const folder = doc.folder_id ? folders.find(f => f.id === doc.folder_id) : null;
+
+                                        return (
+                                            <tr
+                                                key={doc.id}
+                                                onClick={() =>
+                                                    navigate('/documentos', {
+                                                        state: { folderId: doc.folder_id, focusDocumentId: doc.id }
+                                                    })
+                                                }
+                                                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group"
+                                            >
+                                                <td className="pl-3 pr-2 sm:pl-5 sm:pr-3 py-3.5 font-medium text-gray-900 dark:text-white align-middle">
+                                                    <div className="flex items-stretch gap-3 min-w-0">
+                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <div className="h-9 w-9 rounded-lg bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-gray-800 flex items-center justify-center shrink-0">
+                                                                {getFileIcon(doc.type)}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate block font-semibold">{doc.title}</p>
+                                                                {doc.entity_name && <p className="text-xs text-gray-500 truncate mt-0.5">{doc.entity_name}</p>}
+                                                                <div className="mt-0.5">
+                                                                    <span className="inline-flex max-w-[90px] items-center px-1 py-0 rounded text-[10px] leading-tight font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                                                        <span className="truncate">{doc.type}</span>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-2 flex items-center gap-1.5 2xl:hidden">
+                                                                    <span className="inline-flex min-w-0 max-w-[160px] items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                                                        <Folder className="h-3 w-3 shrink-0 text-amber-500" />
+                                                                        <span className="truncate">{folder?.name || 'Sem pasta'}</span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="2xl:hidden shrink-0 min-w-[82px] flex items-center justify-end text-right">
+                                                            <span className="inline-flex flex-col items-end leading-tight text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                                                <span>{compactCreatedAt.dayMonth}</span>
+                                                                <span>{compactCreatedAt.year}</span>
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="truncate block font-semibold">{doc.title}</p>
-                                                        {doc.entity_name && <p className="text-xs text-gray-500 truncate mt-0.5">{doc.entity_name}</p>}
-                                                    </div>
-                                                </div>
-                                                {doc.folder_id && folders.find(f => f.id === doc.folder_id) && (
-                                                    <div className="flex w-fit items-center gap-1.5 mt-2 md:mt-0 md:ml-auto md:max-w-48 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs shrink-0 min-w-0 max-w-full">
-                                                        <Folder className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                                        <span className="truncate">{folders.find(f => f.id === doc.folder_id)?.name}</span>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-[1px] py-4 w-[1%] whitespace-nowrap">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
-                                                    {doc.type}
-                                                </span>
-                                            </td>
-                                            <td className="px-[1px] py-4 text-right tabular-nums w-[1%] whitespace-nowrap">
-                                                {new Date(doc.created_at).toLocaleDateString()}
-                                            </td>
-                                        </tr>
-                                    ));
+                                                </td>
+                                                <td className="hidden 2xl:table-cell px-3 sm:px-4 py-3.5 whitespace-nowrap align-middle">
+                                                    {folder ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                                            <Folder className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                                            <span className="truncate max-w-full">{folder.name}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">Sem pasta</span>
+                                                    )}
+                                                </td>
+                                                <td className="hidden 2xl:table-cell px-3 sm:px-4 py-3.5 text-right tabular-nums whitespace-nowrap align-middle">
+                                                    <span className="inline-flex flex-col items-end leading-[1.15] whitespace-nowrap">
+                                                        <span>{formattedCreatedAt.dayMonth}</span>
+                                                        <span>{`de ${formattedCreatedAt.year}`}</span>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    });
                                 })()}
                             </tbody>
                         </table>
@@ -321,12 +375,12 @@ export default function DashboardFeature() {
                 </div>
 
                 {/* Quick Actions (Takes up 1/3 space on large screens) */}
-                <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl shadow-sm border border-primary/10 p-6 sm:p-8 flex flex-col justify-center text-center">
-                    <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl shadow-sm border border-primary/10 p-5 sm:p-7 lg:p-8 flex flex-col justify-center text-center">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5 sm:mb-6 text-primary">
                         <FileText className="h-8 w-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Novo Arquivo</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">Novo Arquivo</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 text-sm">
                         Adicione um novo documento ao sistema para mantê-lo organizado e fácil de buscar.
                     </p>
                     <Button
