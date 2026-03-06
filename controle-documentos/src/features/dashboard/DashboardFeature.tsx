@@ -87,35 +87,37 @@ export default function DashboardFeature() {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Global Search Area */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 text-center relative z-10">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 text-center relative z-10">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-600 rounded-t-2xl"></div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight mt-2">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight mt-2">
                     Encontre o que você precisa
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+                <p className="text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
                     Busque em todo o seu repositório de documentos por título, palavras-chave, assunto, remetente ou entidade.
                 </p>
 
-                <form onSubmit={handleSearch} className="max-w-3xl mx-auto relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-6 w-6 text-gray-400 group-focus-within:text-primary transition-colors" />
+                <form onSubmit={handleSearch} className="max-w-3xl mx-auto flex flex-col sm:block relative group">
+                    <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none z-10">
+                            <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 group-focus-within:text-primary transition-colors" />
+                        </div>
+                        <Input
+                            type="text"
+                            placeholder="Digite sua busca..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setShowSuggestions(true);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            className="pl-12 sm:pl-16 pr-4 sm:pr-36 py-6 sm:py-8 text-base sm:text-lg rounded-xl shadow-sm border-gray-200 focus-visible:ring-primary focus-visible:border-primary dark:border-gray-700 bg-gray-50 dark:bg-slate-950 transition-all hover:bg-white dark:hover:bg-slate-900 w-full"
+                        />
                     </div>
-                    <Input
-                        type="text"
-                        placeholder="Digite sua busca..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setShowSuggestions(true);
-                        }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        className="pl-14 pr-32 py-8 text-lg rounded-xl shadow-sm border-gray-200 focus-visible:ring-primary focus-visible:border-primary dark:border-gray-700 bg-gray-50 dark:bg-slate-950 transition-all hover:bg-white dark:hover:bg-slate-900"
-                    />
-                    <div className="absolute inset-y-0 right-2 flex items-center">
-                        <Button type="submit" size="lg" className="rounded-lg h-12 px-8 font-semibold">
+                    <div className="sm:absolute sm:inset-y-0 sm:right-2 flex items-center w-full sm:w-auto z-10 mt-3 sm:mt-0 sm:py-2">
+                        <Button type="submit" size="lg" className="w-full sm:w-auto rounded-lg h-14 sm:h-full px-8 font-semibold text-base sm:text-lg shadow-sm sm:shadow-none">
                             Buscar
                         </Button>
                     </div>
@@ -158,37 +160,41 @@ export default function DashboardFeature() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 transition-transform hover:-translate-y-1">
-                    <div className="h-14 w-14 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                        <FileText className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Acervo</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
+                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                        <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">Total acervo</p>
                         {isLoading ? (
-                            <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-1"></div>
+                                <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-2"></div>
                         ) : (
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{metrics.total}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{metrics.total}</p>
                         )}
+                        </div>
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 transition-transform hover:-translate-y-1">
-                    <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <Activity className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Últimos 7 dias</p>
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-1">
+                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                        <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wide">Últimos 7 dias</p>
                         {isLoading ? (
-                            <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-1"></div>
+                                <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mt-2"></div>
                         ) : (
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">+{metrics.recentCount}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">+{metrics.recentCount}</p>
                         )}
+                        </div>
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 col-span-1 lg:col-span-2">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Distribuição</p>
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 col-span-2 lg:col-span-2">
+                    <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Distribuição</p>
                     {(() => {
                         if (isLoading) {
                             return (
@@ -229,15 +235,15 @@ export default function DashboardFeature() {
             </div>
 
             {/* Main Content Area */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8">
                 {/* Recent Documents Table (Takes up 2/3 space on large screens) */}
                 <div className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-slate-900/50">
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-5 w-5 text-gray-400" />
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Adicionados Recentemente</h2>
+                    <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between bg-gray-50/50 dark:bg-slate-900/50 gap-4">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Clock className="h-5 w-5 text-gray-400 shrink-0" />
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">Adicionados Recentemente</h2>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/documentos')} className="text-primary hover:text-primary/80">
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/documentos')} className="text-primary hover:text-primary/80 shrink-0">
                             Ver todos <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     </div>
@@ -246,9 +252,9 @@ export default function DashboardFeature() {
                         <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
                             <thead className="text-xs uppercase bg-gray-50 dark:bg-slate-950/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
                                 <tr>
-                                    <th className="px-6 py-4 font-semibold">Documento</th>
-                                    <th className="px-6 py-4 font-semibold">Tipo</th>
-                                    <th className="px-6 py-4 font-semibold text-right">Cadastrado em</th>
+                                    <th className="px-4 sm:px-6 py-4 font-semibold">Documento</th>
+                                    <th className="px-[1px] py-4 font-semibold w-[1%] whitespace-nowrap">Tipo</th>
+                                    <th className="px-[1px] py-4 font-semibold text-right w-[1%] whitespace-nowrap">Cadastrado em</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -256,9 +262,9 @@ export default function DashboardFeature() {
                                     if (isLoading) {
                                         return Array.from({ length: 3 }).map((_, i) => (
                                             <tr key={`skeleton-${String(i)}`} className="animate-pulse">
-                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
-                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div></td>
-                                                <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
+                                                <td className="px-[1px] py-4"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div></td>
+                                                <td className="px-[1px] py-4 w-[1%] whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div></td>
+                                                <td className="px-[1px] py-4 w-[1%] whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 ml-auto"></div></td>
                                             </tr>
                                         ));
                                     }
@@ -266,7 +272,7 @@ export default function DashboardFeature() {
                                     if (recentDocuments.length === 0) {
                                         return (
                                             <tr>
-                                                <td colSpan={3} className="px-6 py-12 text-center text-gray-500">Nenhum documento recente.</td>
+                                                <td colSpan={3} className="px-[1px] py-12 text-center text-gray-500">Nenhum documento recente.</td>
                                             </tr>
                                         );
                                     }
@@ -281,8 +287,8 @@ export default function DashboardFeature() {
                                             }
                                             className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group"
                                         >
-                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex flex-col md:flex-row md:items-center gap-3">
-                                                <div className="flex items-center gap-3">
+                                                <td className="px-[1px] py-4 font-medium text-gray-900 dark:text-white flex flex-col md:flex-row md:items-center gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
                                                     <div className="h-10 w-10 rounded-lg bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-gray-800 flex items-center justify-center shrink-0">
                                                         {getFileIcon(doc.type)}
                                                     </div>
@@ -292,18 +298,18 @@ export default function DashboardFeature() {
                                                     </div>
                                                 </div>
                                                 {doc.folder_id && folders.find(f => f.id === doc.folder_id) && (
-                                                    <div className="flex items-center gap-1.5 mt-2 md:mt-0 md:ml-auto md:w-48 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs truncate shrink-0 max-w-full">
+                                                    <div className="flex w-fit items-center gap-1.5 mt-2 md:mt-0 md:ml-auto md:max-w-48 bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs shrink-0 min-w-0 max-w-full">
                                                         <Folder className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                                                         <span className="truncate">{folders.find(f => f.id === doc.folder_id)?.name}</span>
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-[1px] py-4 w-[1%] whitespace-nowrap">
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
                                                     {doc.type}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right tabular-nums">
+                                            <td className="px-[1px] py-4 text-right tabular-nums w-[1%] whitespace-nowrap">
                                                 {new Date(doc.created_at).toLocaleDateString()}
                                             </td>
                                         </tr>

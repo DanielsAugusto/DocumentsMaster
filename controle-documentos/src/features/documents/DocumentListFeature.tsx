@@ -318,7 +318,7 @@ export default function DocumentListFeature() {
 
     return (
         <>
-            <div className="mb-6 flex flex-col 2xl:flex-row gap-4 items-start 2xl:items-center justify-between">
+            <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 font-medium overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full">
                     {currentFolderId && (
                         <button
@@ -366,88 +366,43 @@ export default function DocumentListFeature() {
                     ))}
                 </div>
 
-                <div className="flex flex-col 2xl:flex-row w-full 2xl:w-auto gap-2">
-                    <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="w-full 2xl:w-auto bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
-                        <FolderPlus className="h-4 w-4 mr-2" />
-                        Nova Pasta
-                    </Button>
-                    {currentWorkspace?.role === 'admin' && (
-                        <Button
-                            onClick={() => setIsImportDriveModalOpen(true)}
-                            variant="outline"
-                            className="w-full 2xl:w-auto text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-800/60"
-                            title="Importar arquivos de uma pasta pública do Google Drive"
-                        >
-                            <CloudDownload className="h-4 w-4 mr-2" />
-                            Importar do Drive
+                <div className="flex flex-col lg:flex-row w-full lg:w-auto gap-2 shrink-0">
+                    <div className="flex gap-2 w-full lg:w-auto">
+                        <Button onClick={() => setIsCreateFolderOpen(true)} variant="outline" className="flex-1 min-w-0 lg:flex-none bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                            <FolderPlus className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                            <span className="text-xs sm:text-sm truncate">Nova Pasta</span>
                         </Button>
-                    )}
+                        {currentWorkspace?.role === 'admin' && (
+                            <Button
+                                onClick={() => setIsImportDriveModalOpen(true)}
+                                variant="outline"
+                                className="flex-1 min-w-0 lg:flex-none text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-800/60"
+                                title="Importar arquivos de uma pasta pública do Google Drive"
+                            >
+                                <CloudDownload className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                                <span className="text-xs sm:text-sm truncate">Importar</span>
+                            </Button>
+                        )}
+                    </div>
                     <Button
                         onClick={() => {
                             setDocumentToEditId(null);
                             setIsDocumentModalOpen(true);
                         }}
-                        className="w-full 2xl:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white min-w-0"
                     >
-                        <FileIcon className="h-4 w-4 mr-2" />
-                        Novo Arquivo
+                        <FileIcon className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Novo Arquivo</span>
                     </Button>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
-                <div className="px-6 py-4 flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between border-b border-gray-100 dark:border-gray-800 gap-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white w-full 2xl:w-1/3">Seus Documentos</h3>
+                <div className="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-gray-100 dark:border-gray-800 gap-4 lg:gap-6 flex-wrap">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white shrink-0">Seus Documentos</h3>
 
-                    <div className="flex flex-col 2xl:flex-row gap-3 w-full 2xl:w-auto justify-end items-stretch 2xl:items-center">
-                        <div className="relative w-full 2xl:w-56 shrink-0 group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
-                            </div>
-                            <div ref={keywordFilterRef} className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsKeywordFilterOpen((prev) => !prev)}
-                                    className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-9 text-lg text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:hover:bg-slate-900"
-                                    title="Filtrar por Palavras-chave"
-                                >
-                                    <span className="truncate text-left">
-                                        {selectedKeywords.length === 0
-                                            ? 'Todos'
-                                            : `${selectedKeywords.length} selecionada(s)`}
-                                    </span>
-                                    <ChevronDown className="h-4 w-4 ml-2 shrink-0 text-gray-500 dark:text-gray-400" />
-                                </button>
-
-                                {isKeywordFilterOpen && (
-                                    <div className="absolute z-30 mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-slate-900">
-                                        <div className="max-h-56 overflow-y-auto p-2 space-y-1">
-                                            <label className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedKeywords.length === 0}
-                                                    onChange={() => setSelectedKeywords([])}
-                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                {' '}Todos
-                                            </label>
-
-                                            {uniqueKeywordTags.map((tag) => (
-                                                <KeywordTagItem
-                                                    key={tag}
-                                                    tag={tag}
-                                                    isChecked={selectedKeywords.includes(tag)}
-                                                    onSelect={() => handleTagSelect(tag)}
-                                                    onDeselect={() => handleTagDeselect(tag)}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="relative w-full 2xl:w-80">
+                    <div className="flex flex-col lg:flex-row gap-3 w-full lg:flex-1 justify-end items-stretch lg:items-center min-w-0">
+                        <div className="relative flex-1 w-full lg:w-auto lg:max-w-[16rem] xl:max-w-xs order-1 lg:order-none">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                             </div>
@@ -463,31 +418,80 @@ export default function DocumentListFeature() {
                                         setSearchParams({});
                                     }
                                 }}
-                                className="pl-10"
+                                className="pl-10 h-[42px]"
                             />
                         </div>
 
-                        <div className="relative w-full 2xl:w-40 shrink-0 group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                        <div className="flex flex-row gap-2 w-full lg:w-auto order-2 lg:order-none">
+                            <div className="relative flex-1 min-w-0 lg:w-48 xl:w-56 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                                </div>
+                                <div ref={keywordFilterRef} className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsKeywordFilterOpen((prev) => !prev)}
+                                        className="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 pl-8 sm:pl-9 text-sm sm:text-base text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:hover:bg-slate-900"
+                                        title="Filtrar por Palavras-chave"
+                                    >
+                                        <span className="truncate text-left flex-1">
+                                            {selectedKeywords.length === 0
+                                                ? 'Palavras-chave'
+                                                : `${selectedKeywords.length} tags`}
+                                        </span>
+                                        <ChevronDown className="h-4 w-4 ml-1 sm:ml-2 shrink-0 text-gray-500 dark:text-gray-400" />
+                                    </button>
+
+                                    {isKeywordFilterOpen && (
+                                        <div className="absolute z-30 mt-2 w-[240px] sm:w-full -right-2 sm:right-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-slate-900">
+                                            <div className="max-h-56 overflow-y-auto p-2 space-y-1">
+                                                <label className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-slate-800 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedKeywords.length === 0}
+                                                        onChange={() => setSelectedKeywords([])}
+                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    {' '}Todos
+                                                </label>
+
+                                                {uniqueKeywordTags.map((tag) => (
+                                                    <KeywordTagItem
+                                                        key={tag}
+                                                        tag={tag}
+                                                        isChecked={selectedKeywords.includes(tag)}
+                                                        onSelect={() => handleTagSelect(tag)}
+                                                        onDeselect={() => handleTagDeselect(tag)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <Select
-                                value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
-                                className="pl-9 cursor-pointer text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
-                                title="Filtrar por Formato"
-                            >
-                                <option value="Todos">Todos</option>
-                                {uniqueTypes.filter(t => t !== 'Todos').map(type => (
-                                    <option key={type} value={type} className="text-gray-900 dark:text-white">{type}</option>
-                                ))}
-                            </Select>
+
+                            <div className="relative flex-1 min-w-0 lg:w-36 xl:w-40 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Filter className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                                </div>
+                                <Select
+                                    value={selectedType}
+                                    onChange={(e) => setSelectedType(e.target.value)}
+                                    className="pl-8 sm:pl-9 h-[42px] cursor-pointer text-sm sm:text-base text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
+                                    title="Filtrar por Formato"
+                                >
+                                    <option value="Todos">Formato</option>
+                                    {uniqueTypes.filter(t => t !== 'Todos').map(type => (
+                                        <option key={type} value={type} className="text-gray-900 dark:text-white">{type}</option>
+                                    ))}
+                                </Select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {(!loading && !loadingFolders && (visibleFolders.length > 0 || filteredDocuments.length > 0)) && (
-                    <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex items-center gap-4">
+                    <div className="px-2 sm:px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex items-center gap-4">
                         <label className="flex items-center gap-3 cursor-pointer select-none">
                             <input
                                 type="checkbox"
@@ -503,7 +507,7 @@ export default function DocumentListFeature() {
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                     {/* Skeleton Loading State */}
                     {(loading || loadingFolders) && Array.from({ length: 3 }).map((_, idx) => (
-                        <li key={`skeleton-${String(idx)}`} className="p-6 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-6 animate-pulse">
+                        <li key={`skeleton-${String(idx)}`} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 animate-pulse">
                             <div className="flex items-start flex-1 min-w-0">
                                 <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded mr-4 mt-1 flex-shrink-0"></div>
                                 <div className="flex-1 space-y-3">
@@ -523,7 +527,7 @@ export default function DocumentListFeature() {
                             className="flex animate-in fade-in slide-in-from-bottom-4 group"
                         >
                             <label
-                                className="flex items-center px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
+                                className="flex items-start pt-6 sm:pt-10 px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -546,24 +550,24 @@ export default function DocumentListFeature() {
                             </label>
                             <button
                                 type="button"
-                                className="flex-1 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                className="flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-row items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-2 sm:gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                                 onClick={() => {
                                     setCurrentFolderId(folder.id);
                                     setFolderPath(path => [...path, folder]);
                                     setSelectedType('Todos');
                                 }}
                             >
-                                <div className="flex items-center min-w-0">
-                                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
+                                <div className="flex flex-1 items-center min-w-0">
+                                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-3 sm:mr-4 flex-shrink-0 shadow-sm">
                                         <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                                             {folder.name}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 2xl:opacity-0 2xl:group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center justify-end gap-1 sm:gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
                                     <Button
                                         variant="outline"
                                         type="button"
@@ -572,7 +576,7 @@ export default function DocumentListFeature() {
                                             setFolderToRename(folder);
                                             setIsRenameFolderOpen(true);
                                         }}
-                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                         title="Renomear Pasta"
                                     >
@@ -586,7 +590,7 @@ export default function DocumentListFeature() {
                                             e.stopPropagation();
                                             setFolderToMove(folder);
                                         }}
-                                        className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
                                         title="Mover de pasta"
                                         size="sm"
                                     >
@@ -600,7 +604,7 @@ export default function DocumentListFeature() {
                                             e.stopPropagation();
                                             setFolderToDelete(folder);
                                         }}
-                                        className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-0 sm:px-3 h-8 sm:h-9"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3 h-8 sm:h-9"
                                         size="sm"
                                         title="Excluir Pasta"
                                     >
@@ -628,7 +632,7 @@ export default function DocumentListFeature() {
                                 className={`flex animate-in fade-in slide-in-from-bottom-4 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             >
                                 <label
-                                    className="flex items-center px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
+                                    className="flex items-start pt-6 sm:pt-10 px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
@@ -651,7 +655,7 @@ export default function DocumentListFeature() {
                                 </label>
                                 <button
                                     type="button"
-                                    className="flex-1 p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
+                                    className="flex-1 min-w-0 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-row items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-2 sm:gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                                     onClick={() => setPreviewDoc(doc)}
                                 >
                                     <div className="flex items-start min-w-0 flex-1">
@@ -691,7 +695,7 @@ export default function DocumentListFeature() {
                                                 </div>
                                             );
                                         })()}
-                                        <div className="min-w-0 flex-1 2xl:grid 2xl:grid-cols-2 2xl:gap-4">
+                                        <div className="min-w-0 flex-1 lg:grid lg:grid-cols-2 lg:gap-4">
                                             <div className="space-y-1">
                                                 <div className="flex flex-wrap items-center gap-2 mb-2">
                                                     {doc.keywords && (
@@ -727,7 +731,7 @@ export default function DocumentListFeature() {
                                             </div>
 
                                             <div
-                                                className={`hidden 2xl:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.some((folder) => folder.id === doc.folder_id)
+                                                className={`hidden lg:flex items-center w-full gap-3 ${!currentFolderId && doc.folder_id && allFoldersData.some((folder) => folder.id === doc.folder_id)
                                                     ? 'justify-between'
                                                     : 'justify-end'
                                                     }`}
@@ -767,7 +771,7 @@ export default function DocumentListFeature() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1 sm:gap-2 w-full 2xl:w-auto mt-4 2xl:mt-0 2xl:opacity-100 transition-opacity">
+                                    <div className="flex items-center justify-end gap-1 sm:gap-2 shrink-0 lg:opacity-100 transition-opacity">
                                         <Button
                                             variant="outline"
                                             type="button"
@@ -777,7 +781,7 @@ export default function DocumentListFeature() {
                                                 setIsDocumentModalOpen(true);
                                             }}
                                             title="Editar Documento"
-                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
                                             size="sm"
                                         >
                                             <Edit2 className="h-4 w-4 sm:mr-2" />
@@ -787,7 +791,7 @@ export default function DocumentListFeature() {
                                             variant="outline"
                                             asChild
                                             title="Abrir no Google Drive"
-                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
                                             size="sm"
                                         >
                                             <a href={doc.drive_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
@@ -802,7 +806,7 @@ export default function DocumentListFeature() {
                                                 e.stopPropagation();
                                                 setDocumentToMove(doc);
                                             }}
-                                            className="flex-1 2xl:flex-none transition-transform active:scale-95 hover:bg-gray-100 px-0 sm:px-3 h-8 sm:h-9"
+                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
                                             title="Mover de pasta"
                                             size="sm"
                                         >
@@ -817,7 +821,7 @@ export default function DocumentListFeature() {
                                                 e.stopPropagation();
                                                 setDocumentToDelete(doc.id);
                                             }}
-                                            className="flex-1 2xl:flex-none text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-0 sm:px-3 h-8 sm:h-9"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-2 sm:px-3 h-8 sm:h-9"
                                             title="Excluir"
                                             size="sm"
                                         >

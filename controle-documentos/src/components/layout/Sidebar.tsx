@@ -5,6 +5,7 @@ import { Home, FileText, LogOut, Layout, Settings, X, Trash2 } from 'lucide-reac
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 export const navItems = [
     { name: 'Início', path: '/', icon: Home },
     { name: 'Documentos', path: '/documentos', icon: FileText },
@@ -21,6 +22,7 @@ export function Sidebar({ isOpen, setIsOpen }: Readonly<SidebarProps>) {
     const location = useLocation();
     const navigate = useNavigate();
     const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+    const { currentWorkspace } = useWorkspace();
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -29,12 +31,19 @@ export function Sidebar({ isOpen, setIsOpen }: Readonly<SidebarProps>) {
 
     return (
         <aside className={cn(
-            "min-w-[288px] w-max shrink-0 pr-4 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+            "w-72 shrink-0 pr-4 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
             isOpen ? "translate-x-0" : "-translate-x-full"
         )}>
-            <div className="h-[80px] shrink-0 flex items-center px-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
+            <div className="h-[80px] py-4 shrink-0 flex items-center px-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
                 <Layout className="h-8 w-8 text-primary dark:text-primary mr-3" />
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">DocControl</span>
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">DocControl</span>
+                    {currentWorkspace?.organization_name && (
+                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate max-w-[150px]" title={currentWorkspace.organization_name}>
+                            {currentWorkspace.organization_name}
+                        </span>
+                    )}
+                </div>
                 <button
                     type="button"
                     onClick={() => setIsOpen?.(false)}
