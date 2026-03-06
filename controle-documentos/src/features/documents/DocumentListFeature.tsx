@@ -487,7 +487,7 @@ export default function DocumentListFeature() {
                 </div>
 
                 {(!loading && !loadingFolders && (visibleFolders.length > 0 || filteredDocuments.length > 0)) && (
-                    <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex items-center gap-4">
                         <label className="flex items-center gap-3 cursor-pointer select-none">
                             <input
                                 type="checkbox"
@@ -497,22 +497,6 @@ export default function DocumentListFeature() {
                             />
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selecionar Todos</span>
                         </label>
-
-                        {selectedItems.length > 0 && (
-                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
-                                <span className="text-sm text-gray-500 dark:text-gray-400 mr-2 hidden sm:inline-block">
-                                    {selectedItems.length} {selectedItems.length === 1 ? 'item selecionado' : 'itens selecionados'}
-                                </span>
-                                <Button size="sm" variant="outline" onClick={() => setIsMultiMoveModalOpen(true)}>
-                                    <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Mover</span>
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => setIsMultiDeleteModalOpen(true)}>
-                                    <Trash2 className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Excluir</span>
-                                </Button>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -538,6 +522,28 @@ export default function DocumentListFeature() {
                             style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
                             className="flex animate-in fade-in slide-in-from-bottom-4 group"
                         >
+                            <label
+                                className="flex items-center px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    const item = { id: folder.id, type: 'folder' as const, name: folder.name };
+                                    if (selectedItems.some(i => i.id === folder.id && i.type === 'folder')) removeSelection(item); else addSelection(item);
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    aria-label={`Selecionar pasta ${folder.name}`}
+                                    checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
+                                    onChange={(e) => {
+                                        const item = { id: folder.id, type: 'folder' as const, name: folder.name };
+                                        if (e.target.checked) addSelection(item); else removeSelection(item);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                />
+                                <span className="sr-only">Selecionar {folder.name}</span>
+                            </label>
                             <button
                                 type="button"
                                 className="flex-1 p-3 sm:p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:-translate-y-1 gap-4 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
@@ -548,19 +554,6 @@ export default function DocumentListFeature() {
                                 }}
                             >
                                 <div className="flex items-center min-w-0">
-                                    <div className="mr-4 flex items-center h-full">
-                                        <input
-                                            type="checkbox"
-                                            aria-label={`Selecionar pasta ${folder.name}`}
-                                            checked={selectedItems.some(i => i.id === folder.id && i.type === 'folder')}
-                                            onClick={(e) => e.stopPropagation()}
-                                            onChange={(e) => {
-                                                const item = { id: folder.id, type: 'folder' as const, name: folder.name };
-                                                if (e.target.checked) addSelection(item); else removeSelection(item);
-                                            }}
-                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                                        />
-                                    </div>
                                     <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 mr-4 flex-shrink-0 shadow-sm">
                                         <Folder className="h-5 w-5 sm:h-6 sm:w-6 fill-current opacity-80" />
                                     </div>
@@ -634,25 +627,34 @@ export default function DocumentListFeature() {
                                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 className={`flex animate-in fade-in slide-in-from-bottom-4 ${focusedDocumentId === doc.id ? 'ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             >
+                                <label
+                                    className="flex items-center px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        const item = { id: doc.id, type: 'document' as const, name: doc.title };
+                                        if (selectedItems.some(i => i.id === doc.id && i.type === 'document')) removeSelection(item); else addSelection(item);
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        aria-label={`Selecionar documento ${doc.title}`}
+                                        checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
+                                        onChange={(e) => {
+                                            const item = { id: doc.id, type: 'document' as const, name: doc.title };
+                                            if (e.target.checked) addSelection(item); else removeSelection(item);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                                    />
+                                    <span className="sr-only">Selecionar {doc.title}</span>
+                                </label>
                                 <button
                                     type="button"
                                     className="flex-1 p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-800/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 gap-6 cursor-pointer border-l-4 border-transparent hover:border-blue-500"
                                     onClick={() => setPreviewDoc(doc)}
                                 >
                                     <div className="flex items-start min-w-0 flex-1">
-                                        <div className="mr-4 mt-2.5 flex items-start h-full">
-                                            <input
-                                                type="checkbox"
-                                                aria-label={`Selecionar documento ${doc.title}`}
-                                                checked={selectedItems.some(i => i.id === doc.id && i.type === 'document')}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                    const item = { id: doc.id, type: 'document' as const, name: doc.title };
-                                                    if (e.target.checked) addSelection(item); else removeSelection(item);
-                                                }}
-                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                                            />
-                                        </div>
                                         {(() => {
                                             const type = doc.type?.toUpperCase() || '';
                                             if (type === 'PDF') {
@@ -829,6 +831,45 @@ export default function DocumentListFeature() {
                     )}
                 </ul>
             </div>
+
+            {/* Floating Selection Action Bar */}
+            {selectedItems.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-300">
+                    <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {selectedItems.length} {selectedItems.length === 1 ? 'item selecionado' : 'itens selecionados'}
+                        </span>
+                        <button
+                            onClick={() => setSelectedItems([])}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline text-left mt-0.5"
+                        >
+                            Limpar seleção
+                        </button>
+                    </div>
+
+                    <div className="h-8 w-px bg-gray-200 dark:bg-gray-800" />
+
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsMultiMoveModalOpen(true)}
+                            className="transition-transform active:scale-95"
+                        >
+                            <FolderOutput className="h-4 w-4 mr-2" />
+                            Mover Selecionados
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setIsMultiDeleteModalOpen(true)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir Selecionados
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Preview Modal */}
             {previewDoc && (

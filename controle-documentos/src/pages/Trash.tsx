@@ -17,29 +17,29 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
 }>) {
     return (
         <li
-            className={`p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.type === 'folder' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
+            className={`transition-colors flex items-stretch group ${item.type === 'folder' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
         >
-            <div className="flex items-start gap-4 flex-1 overflow-hidden h-full w-full">
-                <label
-                    className="mr-2 mt-1.5 -m-3 p-3 flex items-start h-full cursor-pointer touch-manipulation z-10"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        if (isSelected) onDeselect();
-                        else onSelect();
-                    }}
-                >
-                    <input
-                        type="checkbox"
-                        aria-label={`Selecionar ${item.type === 'folder' ? 'pasta' : 'documento'} ${item.name}`}
-                        checked={isSelected}
-                        onChange={(e) => { if (e.target.checked) onSelect(); else onDeselect(); }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
-                    />
-                    <span className="sr-only">Selecionar {item.name}</span>
-                </label>
+            <label
+                className="flex items-center px-2 sm:px-4 cursor-pointer touch-manipulation z-10 self-stretch"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (isSelected) onDeselect();
+                    else onSelect();
+                }}
+            >
+                <input
+                    type="checkbox"
+                    aria-label={`Selecionar ${item.type === 'folder' ? 'pasta' : 'documento'} ${item.name}`}
+                    checked={isSelected}
+                    onChange={(e) => { if (e.target.checked) onSelect(); else onDeselect(); }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                />
+                <span className="sr-only">Selecionar {item.name}</span>
+            </label>
 
+            <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <button
                     type="button"
                     className="flex items-start gap-4 flex-1 text-left min-w-0"
@@ -66,36 +66,36 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
                         </div>
                     </div>
                 </button>
-            </div>
-            <div
-                className="flex items-center gap-2 shrink-0"
-                role="toolbar"
-                aria-label="Ações do item"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-            >
-                <Button
-                    variant="outline"
-                    size="sm"
-                    title="Restaurar"
-                    onClick={onRestore}
-                    className="text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-transform active:scale-95"
+                <div
+                    className="flex items-center gap-2 shrink-0"
+                    role="toolbar"
+                    aria-label="Ações do item"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                 >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Restaurar
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Excluir Definitivamente"
-                    onClick={onDelete}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-transform active:scale-95"
-                >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Excluir</span>
-                </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        title="Restaurar"
+                        onClick={onRestore}
+                        className="text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-transform active:scale-95"
+                    >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Restaurar
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Excluir Definitivamente"
+                        onClick={onDelete}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-transform active:scale-95"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                    </Button>
+                </div>
             </div>
-        </li >
+        </li>
     );
 }
 
