@@ -167,7 +167,7 @@ export function ImportDriveModal({ isOpen, onClose, currentFolderId }: ImportDri
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-            <button type="button" className="fixed inset-0 bg-transparent border-none cursor-default" tabIndex={-1} onClick={() => !isValidating && !isImporting && onClose()} aria-label="Fechar modal" />
+            <div role="button" tabIndex={-1} className="fixed inset-0 bg-transparent cursor-default" onClick={() => !isValidating && !isImporting && onClose()} onKeyDown={(e) => e.key === 'Escape' && !isValidating && !isImporting && onClose()} aria-label="Fechar modal" />
             <div className={`relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800 flex flex-col ${foundFiles.length > 0 ? 'h-[80vh]' : ''}`}>
                 <div className="p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
                     <div className="flex justify-between items-start mb-2">

@@ -5,6 +5,7 @@ import { Trash2, RefreshCw, Folder, File, AlertCircle, ArrowLeft, ChevronRight, 
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useToast } from '@/components/ui/toast';
 
 function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDelete, onOpenFolder }: Readonly<{
     item: TrashItem;
@@ -158,6 +159,7 @@ function TrashItemRow({ item, isSelected, onSelect, onDeselect, onRestore, onDel
 export default function Trash() {
     const queryClient = useQueryClient();
     const { currentWorkspace } = useWorkspace();
+    const { showToast } = useToast();
     const [isConfirmEmptyOpen, setIsConfirmEmptyOpen] = useState(false);
     const [itemToConfirmDelete, setItemToConfirmDelete] = useState<TrashItem | null>(null);
     const [itemToConfirmRestore, setItemToConfirmRestore] = useState<TrashItem | null>(null);
@@ -194,6 +196,8 @@ export default function Trash() {
         mutationFn: (item: TrashItem) => permanentlyDeleteFromTrash(item.id, item.type),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['trash'] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
             setItemToConfirmDelete(null);
         }
     });
@@ -202,6 +206,8 @@ export default function Trash() {
         mutationFn: emptyTrash,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['trash'] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
             setIsConfirmEmptyOpen(false);
         }
     });
@@ -248,7 +254,7 @@ export default function Trash() {
             setSelectedItems([]);
             setIsMultiRestoreModalOpen(false);
         } catch {
-            alert('Erro ao restaurar itens selecionados.');
+            showToast('Erro ao restaurar itens selecionados.', 'error');
         } finally {
             setIsMultiRestoring(false);
         }
@@ -259,14 +265,27 @@ export default function Trash() {
         try {
             await Promise.all(selectedItems.map(item => permanentlyDeleteFromTrash(item.id, item.type).then(res => res)));
             queryClient.invalidateQueries({ queryKey: ['trash'] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
             setSelectedItems([]);
             setIsMultiDeleteModalOpen(false);
         } catch {
-            alert('Erro ao excluir itens definitivamente.');
+            showToast('Erro ao excluir itens definitivamente.', 'error');
         } finally {
             setIsMultiDeleting(false);
         }
     };
+
+    const isAllSelected = visibleItems.length > 0 && selectedItems.length === visibleItems.length;
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedItems([...visibleItems]);
+        } else {
+            setSelectedItems([]);
+        }
+    };
+
     const trashContent = useMemo(() => {
         if (isLoading) {
             return (
@@ -317,6 +336,17 @@ export default function Trash() {
 
         return (
             <div className="bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-2 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-800/20 flex items-center gap-4">
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={handleSelectAll}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selecionar Todos</span>
+                    </label>
+                </div>
                 <ul className="divide-y divide-gray-200 dark:divide-gray-800">
                     {visibleItems.map((item) => (
                         <TrashItemRow

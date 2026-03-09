@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useDocument } from '../hooks/useDocument';
 import { useAllFolders } from '../hooks/useFolders';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useToast } from '@/components/ui/toast';
 
 interface FolderSelectorProps {
     folderId: string;
@@ -144,6 +145,7 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
     const [loading, setLoading] = useState(false);
     const { user } = useAuth();
     const { currentWorkspace } = useWorkspace();
+    const { showToast } = useToast();
     const queryClient = useQueryClient();
     const [mounted, setMounted] = useState(false);
 
@@ -238,10 +240,12 @@ export function DocumentModal({ isOpen, onClose, documentId, initialFolderId }: 
             : await supabase.from('documents').insert([payload]);
 
         if (error) {
-            alert('Erro ao salvar documento: ' + error.message);
+            showToast('Erro ao salvar documento: ' + error.message, 'error');
         } else {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
+            queryClient.invalidateQueries({ queryKey: ['document'] });
             queryClient.invalidateQueries({ queryKey: ['folders'] });
+            queryClient.invalidateQueries({ queryKey: ['trash'] });
             onClose();
         }
 

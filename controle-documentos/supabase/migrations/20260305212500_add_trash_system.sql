@@ -70,13 +70,14 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_user_id UUID;
+    v_organization_id UUID;
     v_restaurados_folder_id UUID;
 BEGIN
-    -- Get user_id based on item type
+    -- Get user_id and organization_id based on item type
     IF item_type = 'folder' THEN
-        SELECT user_id INTO v_user_id FROM public.folders WHERE id = item_id;
+        SELECT user_id, organization_id INTO v_user_id, v_organization_id FROM public.folders WHERE id = item_id;
     ELSIF item_type = 'document' THEN
-        SELECT user_id INTO v_user_id FROM public.documents WHERE id = item_id;
+        SELECT user_id, organization_id INTO v_user_id, v_organization_id FROM public.documents WHERE id = item_id;
     ELSE
         RAISE EXCEPTION 'Invalid item type';
     END IF;
@@ -89,16 +90,34 @@ BEGIN
         RAISE EXCEPTION 'Not authorized';
     END IF;
 
-    -- Find or create "Restaurados" folder
+    -- Find existing "Restaurados" folder
     SELECT id INTO v_restaurados_folder_id 
     FROM public.folders 
-    WHERE user_id = v_user_id AND name = 'Restaurados' AND parent_id IS NULL AND deleted_at IS NULL
+    WHERE user_id = v_user_id 
+      AND organization_id = v_organization_id
+      AND name = 'Restaurados' 
+      AND parent_id IS NULL 
+      AND deleted_at IS NULL
     LIMIT 1;
 
+    -- Create only if it doesn't exist (ON CONFLICT prevents duplicates)
     IF v_restaurados_folder_id IS NULL THEN
-        INSERT INTO public.folders (name, user_id, parent_id)
-        VALUES ('Restaurados', v_user_id, NULL)
+        INSERT INTO public.folders (name, user_id, parent_id, organization_id)
+        VALUES ('Restaurados', v_user_id, NULL, v_organization_id)
+        ON CONFLICT DO NOTHING
         RETURNING id INTO v_restaurados_folder_id;
+
+        -- If ON CONFLICT hit, fetch the existing one
+        IF v_restaurados_folder_id IS NULL THEN
+            SELECT id INTO v_restaurados_folder_id 
+            FROM public.folders 
+            WHERE user_id = v_user_id 
+              AND organization_id = v_organization_id
+              AND name = 'Restaurados' 
+              AND parent_id IS NULL 
+              AND deleted_at IS NULL
+            LIMIT 1;
+        END IF;
     END IF;
 
     -- Restore the item and move it to "Restaurados"

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload, MoreVertical } from 'lucide-react';
+import { ExternalLink, Trash2, File as FileIcon, FileText, FileSpreadsheet, FileImage, X, Search, Filter, Edit2, Folder, ChevronRight, ChevronDown, FolderPlus, FolderOutput, ArrowLeft, CloudDownload, MoreVertical, Calendar } from 'lucide-react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { ImportDriveModal } from './components/ImportDriveModal';
 import { DocumentModal } from './components/DocumentModal';
 import { RenameFolderModal } from './components/RenameFolderModal';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useToast } from '@/components/ui/toast';
 
 interface KeywordTagItemProps {
     tag: string;
@@ -47,6 +48,7 @@ function KeywordTagItem({ tag, isChecked, onSelect, onDeselect }: Readonly<Keywo
 
 export default function DocumentListFeature() {
     const { currentWorkspace } = useWorkspace();
+    const { showToast } = useToast();
     const location = useLocation();
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [folderPath, setFolderPath] = useState<FolderType[]>([]);
@@ -129,6 +131,8 @@ export default function DocumentListFeature() {
     const [searchTerm, setSearchTerm] = useState(initialQuery);
     const [selectedType, setSelectedType] = useState('Todos');
     const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [isKeywordFilterOpen, setIsKeywordFilterOpen] = useState(false);
     const keywordFilterRef = useRef<HTMLDivElement | null>(null);
     const documentCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
@@ -153,7 +157,8 @@ export default function DocumentListFeature() {
 
     const hasActiveTextSearch = searchTerm.trim().length > 0;
     const hasActiveKeywordFilters = selectedKeywords.length > 0;
-    const isGlobalDocumentSearch = hasActiveTextSearch || hasActiveKeywordFilters;
+    const hasActiveDateFilter = dateFrom.length > 0 || dateTo.length > 0;
+    const isGlobalDocumentSearch = hasActiveTextSearch || hasActiveKeywordFilters || hasActiveDateFilter;
 
     const buildFolderPath = (id: string, currentPath: FolderType[] = []): FolderType[] => {
         const folder = allFoldersData.find((f) => f.id === id);
@@ -233,6 +238,7 @@ export default function DocumentListFeature() {
         // Soft-delete for documents
         await supabase.from('documents').update({ deleted_at: new Date().toISOString() }).eq('id', id);
         queryClient.invalidateQueries({ queryKey: ['documents'] });
+        queryClient.invalidateQueries({ queryKey: ['trash'] });
         setDocumentToDelete(null);
     };
 
@@ -260,11 +266,12 @@ export default function DocumentListFeature() {
 
             await queryClient.invalidateQueries({ queryKey: ['folders'] });
             await queryClient.invalidateQueries({ queryKey: ['documents'] });
+            await queryClient.invalidateQueries({ queryKey: ['trash'] });
             setSelectedItems([]);
             setIsMultiDeleteModalOpen(false);
         } catch (err) {
             console.error('Erro ao excluir itens selecionados:', err);
-            alert('Um erro ocorreu ao excluir os itens selecionados.');
+            showToast('Erro ao excluir os itens selecionados.', 'error');
         } finally {
             setIsMultiDeleting(false);
         }
@@ -319,9 +326,20 @@ export default function DocumentListFeature() {
                 selectedKeywords.length === 0 ||
                 selectedKeywords.some((selectedTag) => docKeywordTags.includes(selectedTag));
 
-            return matchesSearch && matchesType && matchesKeyword;
+            let matchesDate = true;
+            if (dateFrom || dateTo) {
+                const docDate = doc.document_date;
+                if (!docDate) {
+                    matchesDate = false;
+                } else {
+                    if (dateFrom && docDate < dateFrom) matchesDate = false;
+                    if (dateTo && docDate > dateTo) matchesDate = false;
+                }
+            }
+
+            return matchesSearch && matchesType && matchesKeyword && matchesDate;
         });
-    }, [documentsSource, searchTerm, selectedType, selectedKeywords]);
+    }, [documentsSource, searchTerm, selectedType, selectedKeywords, dateFrom, dateTo]);
 
     const uniqueTypes = useMemo(() => {
         const types = new Set(documents.map(d => d.type).filter(Boolean));
@@ -335,10 +353,21 @@ export default function DocumentListFeature() {
         return Array.from(tags);
     }, [allDocuments]);
 
-    const visibleFolders =
-        !isGlobalDocumentSearch && (selectedType === 'Todos' || selectedType === 'Pastas')
-            ? folders
-            : [];
+    const visibleFolders = useMemo(() => {
+        if (isGlobalDocumentSearch || (selectedType !== 'Todos' && selectedType !== 'Pastas')) {
+            return [];
+        }
+        // At root level, hide "Restaurados" folder if it's empty
+        if (!currentFolderId) {
+            return folders.filter(folder => {
+                if (folder.name !== 'Restaurados') return true;
+                const hasChildFolders = allFoldersData.some(f => f.parent_id === folder.id);
+                const hasChildDocs = allDocuments.some(d => d.folder_id === folder.id);
+                return hasChildFolders || hasChildDocs;
+            });
+        }
+        return folders;
+    }, [isGlobalDocumentSearch, selectedType, currentFolderId, folders, allFoldersData, allDocuments]);
 
     useEffect(() => {
         if (!pendingDocumentFocusId) return;
@@ -362,7 +391,7 @@ export default function DocumentListFeature() {
     useEffect(() => {
         // Reset selection if changing folder or searching
         setSelectedItems([]);
-    }, [currentFolderId, searchTerm, selectedType, selectedKeywords]);
+    }, [currentFolderId, searchTerm, selectedType, selectedKeywords, dateFrom, dateTo]);
 
     // No longer blocking the whole render with a simple text loading.
     // We will render the UI shell and show Skeletons inside the list instead.
@@ -538,6 +567,35 @@ export default function DocumentListFeature() {
                                 </Select>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <div className="relative min-w-0 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Calendar className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                                </div>
+                                <Input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                    className="pl-8 sm:pl-9 h-[42px] text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-950"
+                                    title="Data inicial"
+                                    placeholder="De"
+                                />
+                            </div>
+                            <div className="relative min-w-0 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Calendar className="h-4 w-4 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors" />
+                                </div>
+                                <Input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    className="pl-8 sm:pl-9 h-[42px] text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-950"
+                                    title="Data final"
+                                    placeholder="Até"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -617,51 +675,6 @@ export default function DocumentListFeature() {
                                             {folder.name}
                                         </p>
                                     </div>
-                                </div>
-                                <div className="hidden">
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setFolderToRename(folder);
-                                                setIsRenameFolderOpen(true);
-                                            }}
-                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                            size="sm"
-                                            title="Renomear Pasta"
-                                        >
-                                            <Edit2 className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Renomear</span>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setFolderToMove(folder);
-                                            }}
-                                            className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                            title="Mover de pasta"
-                                            size="sm"
-                                        >
-                                            <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Mover</span>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setFolderToDelete(folder);
-                                            }}
-                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 px-2 sm:px-3 h-8 sm:h-9"
-                                            size="sm"
-                                            title="Excluir Pasta"
-                                        >
-                                            <Trash2 className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Excluir</span>
-                                        </Button>
                                 </div>
                             </button>
                             <div className="relative flex items-center pr-2 sm:pr-4 z-10 self-stretch" data-mobile-action-menu-root="true">
@@ -872,64 +885,6 @@ export default function DocumentListFeature() {
                                         </div>
                                     </div>
 
-                                    <div className="hidden">
-                                            <Button
-                                                variant="outline"
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDocumentToEditId(doc.id);
-                                                    setIsDocumentModalOpen(true);
-                                                }}
-                                                title="Editar Documento"
-                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                                size="sm"
-                                            >
-                                                <Edit2 className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Editar</span>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                title="Abrir no Google Drive"
-                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                                size="sm"
-                                            >
-                                                <a href={doc.drive_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                                    <ExternalLink className="h-4 w-4 sm:mr-2" />
-                                                    <span className="hidden sm:inline">Drive</span>
-                                                </a>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDocumentToMove(doc);
-                                                }}
-                                                className="transition-transform active:scale-95 hover:bg-gray-100 px-2 sm:px-3 h-8 sm:h-9"
-                                                title="Mover de pasta"
-                                                size="sm"
-                                            >
-                                                <FolderOutput className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Mover</span>
-                                            </Button>
-
-                                            <Button
-                                                variant="ghost"
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDocumentToDelete(doc.id);
-                                                }}
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 transition-transform active:scale-95 px-2 sm:px-3 h-8 sm:h-9"
-                                                title="Excluir"
-                                                size="sm"
-                                            >
-                                                <Trash2 className="h-4 w-4 sm:mr-2" />
-                                                <span className="hidden sm:inline">Excluir</span>
-                                            </Button>
-                                    </div>
                                 </button>
                                 <div className="relative flex items-center pr-2 sm:pr-4 z-10 self-stretch" data-mobile-action-menu-root="true">
                                     <button

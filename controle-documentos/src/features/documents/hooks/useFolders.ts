@@ -43,6 +43,7 @@ export const useMoveDocument = () => {
         mutationFn: ({ documentId, folderId }: { documentId: string, folderId: string | null }) => moveDocument(documentId, folderId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
         },
     });
 };
