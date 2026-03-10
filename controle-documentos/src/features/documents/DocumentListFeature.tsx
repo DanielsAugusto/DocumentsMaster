@@ -1054,6 +1054,7 @@ export default function DocumentListFeature() {
                 description={`Tem certeza que deseja mover ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'} para a lixeira?`}
                 confirmText={isMultiDeleting ? "Excluindo..." : "Mover para lixeira"}
                 cancelText="Cancelar"
+                checkboxLabel="Confirmo que desejo mover estes itens para a lixeira."
                 onConfirm={handleMultiDelete}
                 onCancel={() => setIsMultiDeleteModalOpen(false)}
                 isDestructive

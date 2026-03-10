@@ -13,6 +13,7 @@ interface DeleteFolderModalProps {
 
 export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: DeleteFolderModalProps) {
     const [deleteDocuments, setDeleteDocuments] = useState(false);
+    const [isConfirmed, setIsConfirmed] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const removeFolder = useDeleteFolder();
     const [mounted, setMounted] = useState(false);
@@ -36,6 +37,7 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
     useEffect(() => {
         if (isOpen) {
             setDeleteDocuments(false);
+            setIsConfirmed(false);
             setError(null);
         }
     }, [isOpen]);
@@ -43,6 +45,7 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
     if (!isOpen || !mounted || !folderId) return null;
 
     const handleDelete = async () => {
+        if (!isConfirmed) return;
         setError(null);
         try {
             await removeFolder.mutateAsync({ id: folderId, deleteDocuments });
@@ -76,27 +79,52 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
                         Tem certeza que deseja excluir a pasta <strong>{folderName}</strong>?
                     </p>
 
-                    <div className="mb-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-start gap-3 group">
-                            <input
-                                id="delete-contents-checkbox"
-                                type="checkbox"
-                                aria-label="Excluir também os arquivos contidos na pasta"
-                                className="w-4 h-4 mt-1 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
-                                checked={deleteDocuments}
-                                onChange={(e) => setDeleteDocuments(e.target.checked)}
-                            />
-                            <label
-                                htmlFor="delete-contents-checkbox"
-                                className="flex flex-col cursor-pointer"
-                            >
-                                <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    Excluir também os arquivos contidos nela?
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Se desmarcado, os arquivos voltarão para a pasta inicial. Subpastas serão excluídas de qualquer forma.
-                                </span>
-                            </label>
+                    <div className="space-y-4 mb-8">
+                        <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900/30">
+                            <div className="flex items-start gap-3 group cursor-pointer" onClick={() => setIsConfirmed(!isConfirmed)}>
+                                <input
+                                    id="confirm-delete-checkbox"
+                                    type="checkbox"
+                                    aria-label="Confirmar exclusão da pasta"
+                                    className="w-4 h-4 mt-1 shrink-0 text-red-600 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                                    checked={isConfirmed}
+                                    onChange={(e) => setIsConfirmed(e.target.checked)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <label
+                                    htmlFor="confirm-delete-checkbox"
+                                    className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer select-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Confirmo que desejo excluir esta pasta e estou ciente das consequências.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div className="flex items-start gap-3 group cursor-pointer" onClick={() => setDeleteDocuments(!deleteDocuments)}>
+                                <input
+                                    id="delete-contents-checkbox"
+                                    type="checkbox"
+                                    aria-label="Excluir também os arquivos contidos na pasta"
+                                    className="w-4 h-4 mt-1 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                                    checked={deleteDocuments}
+                                    onChange={(e) => setDeleteDocuments(e.target.checked)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <label
+                                    htmlFor="delete-contents-checkbox"
+                                    className="flex flex-col cursor-pointer select-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        Excluir também os arquivos contidos nela?
+                                    </span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Se desmarcado, os arquivos voltarão para a pasta inicial. Subpastas serão excluídas de qualquer forma.
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -114,8 +142,8 @@ export function DeleteFolderModal({ isOpen, onClose, folderId, folderName }: Del
                         <Button
                             variant="destructive"
                             onClick={handleDelete}
-                            className="w-full sm:w-auto text-white"
-                            disabled={removeFolder.isPending}
+                            className="w-full sm:w-auto text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={removeFolder.isPending || !isConfirmed}
                         >
                             {removeFolder.isPending ? 'Excluindo...' : 'Excluir'}
                         </Button>

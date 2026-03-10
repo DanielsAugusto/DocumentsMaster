@@ -13,6 +13,7 @@ interface ConfirmModalProps {
     onCancel: () => void;
     isDestructive?: boolean;
     isLoading?: boolean;
+    checkboxLabel?: string;
 }
 
 export function ConfirmModal({
@@ -25,12 +26,21 @@ export function ConfirmModal({
     onCancel,
     isDestructive = false,
     isLoading = false,
+    checkboxLabel,
 }: ConfirmModalProps) {
     const [mounted, setMounted] = useState(false);
+    const [isChecked, setIsChecked] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Reset checkbox state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setIsChecked(false);
+        }
+    }, [isOpen]);
 
     // Handle Escape key
     useEffect(() => {
@@ -45,6 +55,8 @@ export function ConfirmModal({
     }, [isOpen, onCancel]);
 
     if (!isOpen || !mounted) return null;
+
+    const isConfirmDisabled = isLoading || (checkboxLabel ? !isChecked : false);
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in duration-200">
@@ -66,9 +78,29 @@ export function ConfirmModal({
                         </button>
                     </div>
 
-                    <p className="text-gray-600 dark:text-gray-400 mb-8">
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
                         {description}
                     </p>
+
+                    {checkboxLabel && (
+                        <div className="mb-8 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-gray-800 flex items-start gap-3 group cursor-pointer" onClick={() => setIsChecked(!isChecked)}>
+                            <input
+                                type="checkbox"
+                                id="modal-confirm-checkbox"
+                                checked={isChecked}
+                                onChange={(e) => setIsChecked(e.target.checked)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-700 dark:bg-slate-900"
+                            />
+                            <label
+                                htmlFor="modal-confirm-checkbox"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {checkboxLabel}
+                            </label>
+                        </div>
+                    )}
 
                     <div className="flex flex-col sm:flex-row gap-3 justify-end">
                         <Button
@@ -81,16 +113,12 @@ export function ConfirmModal({
                         </Button>
                         <Button
                             variant={isDestructive ? 'destructive' : 'default'}
-                            disabled={isLoading}
+                            disabled={isConfirmDisabled}
                             onClick={() => {
                                 onConfirm();
-                                if (!isLoading) {
-                                    // Wait for parent component to close modal when mutation is finished instead of auto closing immediately.
-                                    // Actually, the parent component already manages isOpen via state. We don't strictly need to close here if loading.
-                                }
                             }}
                             className={`w-full sm:w-auto ${isDestructive
-                                ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700'
+                                ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
                                 : ''
                                 }`}
                         >

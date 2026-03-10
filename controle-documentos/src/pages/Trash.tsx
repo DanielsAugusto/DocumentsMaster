@@ -501,6 +501,7 @@ export default function Trash() {
                 description={`O item "${itemToConfirmDelete?.name}" será excluído para sempre. Esta ação não pode ser desfeita.`}
                 confirmText="Excluir"
                 cancelText="Cancelar"
+                checkboxLabel="Confirmo que desejo excluir permanentemente este item e que ele não poderá ser recuperado."
                 onConfirm={() => itemToConfirmDelete && deleteMutation.mutate(itemToConfirmDelete)}
                 onCancel={() => setItemToConfirmDelete(null)}
                 isDestructive
@@ -524,6 +525,7 @@ export default function Trash() {
                 description={`Tem certeza que deseja excluir permanentemente ${selectedItems.length === 1 ? 'o item selecionado' : 'os itens selecionados'}? Esta ação não pode ser desfeita.`}
                 confirmText={isMultiDeleting ? "Excluindo..." : "Excluir para sempre"}
                 cancelText="Cancelar"
+                checkboxLabel={`Confirmo que desejo excluir permanentemente ${selectedItems.length === 1 ? 'este item' : 'estes ' + String(selectedItems.length) + ' itens'}.`}
                 onConfirm={handleMultiDelete}
                 onCancel={() => setIsMultiDeleteModalOpen(false)}
                 isDestructive
