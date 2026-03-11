@@ -557,7 +557,7 @@ export default function DocumentListFeature() {
                                 <Select
                                     value={selectedType}
                                     onChange={(e) => setSelectedType(e.target.value)}
-                                    className="pl-8 sm:pl-9 h-[42px] cursor-pointer text-sm sm:text-base text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
+                                    className="pl-8 sm:pl-9 h-[42px] py-2 cursor-pointer text-sm sm:text-base text-gray-900 dark:text-white bg-white dark:bg-gray-950 truncate"
                                     title="Filtrar por Formato"
                                 >
                                     <option value="Todos">Formato</option>
